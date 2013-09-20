@@ -6,7 +6,6 @@ import java.awt.Image;
 import java.awt.Point;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
 import java.awt.image.DataBufferInt;
 import java.awt.image.WritableRaster;
 import java.io.BufferedReader;
@@ -15,7 +14,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.BitSet;
 
 import javax.imageio.ImageIO;
 
@@ -42,86 +41,61 @@ class PuzzleDescriptor {
 	public int getXInterval(int x) {return xIntervals[x];}
 	public int getYInterval(int x) {return yIntervals[x];}
 
+	private void findRedLocations(final BufferedImage template, ArrayList<Integer> xRedLoc, ArrayList<Integer> yRedLoc) {
+		int a = 0;
+		for (int y = 0, h = template.getHeight(); (xRedLoc.size() == 0) && (y < h); y++) {
+			for (int x = 0, w = template.getWidth(); x < w; x++) {
+				if (template.getRGB(x, y) == Color.RED.getRGB()) {
+					if (a == 0 && yRedLoc.size() == 0) 
+						yRedLoc.add(y);
+					xRedLoc.add(x);
+				}
+			}
+		}
+		a = 1;
+		for (int y = yRedLoc.get(0)+1, h = template.getHeight(), x = xRedLoc.get(0); y < h; y++) {
+			if (template.getRGB(x, y) == Color.RED.getRGB()) {
+				yRedLoc.add(y);
+			}
+		}
+
+		for (Integer y : yRedLoc) 
+			for (Integer x : xRedLoc)
+				template.setRGB(x, y, 0);
+	}
+	
 	// all the work happens here -- after this function finishes, the class is immutable
-	public void preparePuzzle(BufferedImage img, BufferedImage template) {
+	public void preparePuzzle(BufferedImage img, BufferedImage unscaledTemplate) {
 		if (prepared) 
 			throw new IllegalStateException("PuzzleDescriptor.preparePuzzle should only be called once");
 
 		prepared = true; // let's be optimistic
 		
-		BufferedImage currentTemplate = copyBufferedImage(template);
-		if (img.getHeight() > img.getWidth()) {
-			template = createRotatedCopy(template, Math.PI / 2);
-			xPieces = 4;
-			yPieces = 6;
-		} else {
-			xPieces = 6;
-			yPieces = 4;
+		int iw = img.getWidth();
+		int ih = img.getHeight();
+		
+		BufferedImage prescaledCurrentTemplate = copyBufferedImage(unscaledTemplate);
+		if (ih > iw) {
+			unscaledTemplate = createRotatedCopy(unscaledTemplate, Math.PI / 2);
 		}
 
+		ArrayList<Integer> unscaledTemplateXLoc = new ArrayList<Integer>();
+		ArrayList<Integer> unscaledTemplateYLoc = new ArrayList<Integer>();
+		findRedLocations(unscaledTemplate, unscaledTemplateXLoc, unscaledTemplateYLoc);
+		xPieces = unscaledTemplateXLoc.size();
+		yPieces = unscaledTemplateYLoc.size();
+		
+		int w = unscaledTemplate.getWidth();
+		int h = unscaledTemplate.getHeight();
+
+		double sW = iw / (double) w;
+		double sH = ih / (double) h;
 		xRedLoc = new int[xPieces];
 		yRedLoc = new int[yPieces];
-
-		int y = 0;
-		boolean red = false;
-		while (!red) {
-			for (int x = 0; x < template.getWidth(); x++) {
-				if (template.getRGB(x, y) == Color.RED.getRGB()) {
-					red = true;
-				}
-			}
-			if (!red)
-				y++;
-		}
-		int a = 0;
-		int x = 0;
-		while (x < template.getWidth()) {
-			if (template.getRGB(x, y) == Color.RED.getRGB()) {
-				xRedLoc[a] = x;
-				a++;
-			}
-			x++;
-		}
-
-		x = 0;
-		red = false;
-		while (!red) {
-			for (y = 0; y < template.getHeight(); y++) {
-				if (template.getRGB(x, y) == Color.RED.getRGB()) {
-					red = true;
-				}
-			}
-			if (!red)
-				x++;
-		}
-		a = 0;
-		y = 0;
-		while (y < template.getHeight()) {
-			if (template.getRGB(x, y) == Color.RED.getRGB()) {
-				yRedLoc[a] = y;
-				a++;
-			}
-			y++;
-		}
-
-		for (x = 0; x < template.getWidth(); x++)
-			for (y = 0; y < template.getHeight(); y++)
-				if (template.getRGB(x, y) == Color.RED.getRGB())
-					template.setRGB(x, y, 0);
-
-		int w = template.getWidth();
-		int h = template.getHeight();
-
-		Image t = template.getScaledInstance(img.getWidth(), img.getHeight(), Image.SCALE_SMOOTH);
-		template = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
-		template.getGraphics().drawImage(t, 0, 0, null);
-
-		double sW = template.getWidth() / (double) w;
-		double sH = template.getHeight() / (double) h;
-		for (int yI = 0; yI < yRedLoc.length; yI++)
-			yRedLoc[yI] = (int) (yRedLoc[yI] * sH);
-		for (int xI = 0; xI < xRedLoc.length; xI++)
-			xRedLoc[xI] = (int) (xRedLoc[xI] * sW);
+		for (int yI = 0; yI < unscaledTemplateYLoc.size(); yI++)
+			yRedLoc[yI] = (int) (unscaledTemplateYLoc.get(yI) * sH);
+		for (int xI = 0; xI < unscaledTemplateXLoc.size(); xI++)
+			xRedLoc[xI] = (int) (unscaledTemplateXLoc.get(xI) * sW);
 
 		xIntervals = new int[xPieces - 1];
 		yIntervals = new int[yPieces - 1];
@@ -133,67 +107,32 @@ class PuzzleDescriptor {
 			yIntervals[d] = yRedLoc[d + 1] - yRedLoc[d];
 		}
 
-		int[] xCoords = new int[xPieces];
-		int[] yCoords = new int[yPieces];
-		int width = template.getWidth();
-		int height = template.getHeight();
-		int xStep = width / xPieces;
-		int yStep = height / yPieces;
-		int cX = xStep / 2;
-		for (int i = 0; i < xPieces; i++) {
-			xCoords[i] = cX;
-			cX += xStep;
-		}
-		int cY = yStep / 2;
-		for (int i = 0; i < yPieces; i++) {
-			yCoords[i] = cY;
-			cY += yStep;
-		}
-
 		pieces = new BufferedImage[xPieces][yPieces];
 
-		double mX = (double) currentTemplate.getWidth() / (double) template.getWidth();
-		double mY = (double) currentTemplate.getHeight() / (double) template.getHeight();
+		double mX = (double) prescaledCurrentTemplate.getWidth() / (double) iw;
+		double mY = (double) prescaledCurrentTemplate.getHeight() / (double) ih;
 		centers = new Point[xPieces][yPieces];
 
-		int pX = 0;
-		int pY = 0;
-		BufferedImage cTemplateNoRed = copyBufferedImage(currentTemplate);
-		for (int b = 0; b < cTemplateNoRed.getWidth(); b++) {
-			for (int c = 0; c < cTemplateNoRed.getHeight(); c++) {
-				if (cTemplateNoRed.getRGB(b, c) == Color.RED.getRGB()) {
-					cTemplateNoRed.setRGB(b, c, 0);
-				}
+		Image scaledTemplateImage = unscaledTemplate.getScaledInstance(iw, ih, Image.SCALE_SMOOTH);
+		BufferedImage bufferedScaledTemplateImage = new BufferedImage(iw, ih, BufferedImage.TYPE_INT_ARGB);
+		bufferedScaledTemplateImage.getGraphics().drawImage(scaledTemplateImage, 0, 0, null);
+
+		int xStep = iw / xPieces;
+		int yStep = ih / yPieces;
+		for (int j = 0, cY = yStep / 2; j < yPieces; j++, cY += yStep) {
+			for (int k = 0, cX = xStep / 2; k < xPieces; k++, cX += xStep) {
+				pieces[k][j] = getPiece(cX, cY, bufferedScaledTemplateImage, img, null);
 			}
-		}
-		for (int j : yCoords) {
-			for (int k : xCoords) {
-				pieces[pX][pY] = getPiece(k, j, template, img);
-				pX++;
-			}
-			pY++;
-			pX = 0;
 		}
 
-		pX = 0;
-		pY = 0;
-		for (int j = 0; j < currentTemplate.getHeight(); j++) {
-			for (int i = 0; i < currentTemplate.getWidth(); i++) {
-				if (currentTemplate.getRGB(i, j) == Color.RED.getRGB()) {
-					BufferedImage p = getPiece(i, j, cTemplateNoRed, currentTemplate);
-					for (int b = 0; b < p.getWidth(); b++)
-						for (int c = 0; c < p.getHeight(); c++)
-							if (p.getRGB(b, c) == Color.RED.getRGB()) {
-								centers[pX][pY] = new Point((int) (b / mX), (int) (c / mY));
-							}
-					pX++;
-					if (pX == xPieces) {
-						pX = 0;
-						pY++;
-					}
-				}
+		for (int j = 0; j < unscaledTemplateYLoc.size(); j++) {
+			for (int i = 0; i < unscaledTemplateXLoc.size(); i++) {
+				int unscaledCenter[] = new int[2];
+				findCenter(unscaledTemplateXLoc.get(i), unscaledTemplateYLoc.get(j), prescaledCurrentTemplate, prescaledCurrentTemplate, unscaledCenter);
+				centers[i][j] = new Point((int) (unscaledCenter[0] / mX), (int) (unscaledCenter[1] / mY));
 			}
 		}
+		
 	}
 	
 	private BufferedImage createRotatedCopy(BufferedImage img, double rotation) {
@@ -213,74 +152,91 @@ class PuzzleDescriptor {
 		return rot;
 	}
 	
-	private ArrayList<Integer> floodIt(int[] pixels, int x, int y, int width, int height, int oldColor, int fillColor) {
+	private BitSet filled = new BitSet();
+	private BitSet toVisit = new BitSet();
+	
+	// doesn't change pixels
+	private BitSet floodIt(int[] pixels, int seedx, int seedy, int width, int height, int oldColor, int fillColor) {
 
-		int[] point = new int[] { x, y };
-		LinkedList<int[]> points = new LinkedList<int[]>();
-		ArrayList<Integer> points1 = new ArrayList<Integer>();
-		points.addFirst(point);
-		while (!points.isEmpty()) {
-			point = points.remove();
+		filled.clear(); toVisit.clear();
+		
+		int point = seedy*width+seedx;
+		toVisit.set(point);
+		
+		int red = Color.RED.getRGB();
+		while (point != -1) {
+			toVisit.clear(point);
+			int nextPointToVisit = -1;
+			if (!filled.get(point)) {
+				
+				int y = point / width;
+				int x = point - y * width;
+				int yp = point - x;
 
-			x = point[0];
-			y = point[1];
-			int xr = x;
+				int xr = x;
+				
+				int tt = xr + yp;
+				do {
+					xr++;
+					tt++;
+				} while (xr < width && (pixels[tt] == oldColor || pixels[tt] == red) && !filled.get(tt));
+				filled.set(x + yp, tt);
+				
+				int xl = x;
+				tt = xl + yp;
+				do {
+					xl--;
+					tt--;
+				} while (xl >= 0 && (pixels[tt] == oldColor || pixels[tt] == red) && !filled.get(tt));
+				filled.set(tt+1, x+yp);
+				
+				xr--;
+				xl++;
 
-			int yp = y * width;
-			int ypp = yp + width;
-			int ypm = yp - width;
-
-			do {
-				pixels[xr + yp] = fillColor;
-				points1.add(xr + yp);
-				xr++;
-			} while (xr < width && (pixels[xr + y * width] == oldColor || pixels[xr + y * width] == Color.RED.getRGB()));
-
-			int xl = x;
-			do {
-				pixels[xl + yp] = fillColor;
-				points1.add(xl + yp);
-				xl--;
-			} while (xl >= 0 && (pixels[xl + y * width] == oldColor || pixels[xl + y * width] == Color.RED.getRGB()));
-
-			xr--;
-			xl++;
-
-			boolean upLine = false;
-			boolean downLine = false;
-
-			for (int xi = xl; xi <= xr; xi++) {
-				if (y > 0 && (pixels[xi + ypm] == oldColor || pixels[xi + ypm] == Color.RED.getRGB()) && !upLine) {
-					points.addFirst(new int[] { xi, y - 1 });
-					upLine = true;
-				} else {
-					upLine = false;
+				int ypp = yp + width;
+				int ypm = yp - width;
+				for (int xi = xl, tm = xl+ypm, tp = xl+ypp; xi <= xr; xi++, tm++, tp++) {
+					if (y > 0 && (pixels[tm] == oldColor || pixels[tm] == red) && !filled.get(tm)) {
+						if (nextPointToVisit == -1) nextPointToVisit = tm;
+						else toVisit.set(tm);
+					}
+					if (y < height - 1 && (pixels[tp] == oldColor || pixels[tp] == red) && !filled.get(tp)) {
+						if (nextPointToVisit == -1) nextPointToVisit = tp;
+						else toVisit.set(tp);
+					}
 				}
-				if (y < height - 1 && (pixels[xi + ypp] == oldColor || pixels[xi + ypp] == Color.RED.getRGB()) && !downLine) {
-					points.addFirst(new int[] { xi, y + 1 });
-					downLine = true;
-				} else {
-					downLine = false;
-				}
+				
+				toVisit.andNot(filled);
 			}
+			
+			point = (nextPointToVisit == -1) ? toVisit.nextSetBit(0) : nextPointToVisit;
 		}
-		return points1;
+		return filled;
 	}
 	
-	private ArrayList<Integer> fill(Image img, int xSeed, int ySeed, Color col) {
-		BufferedImage bi = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-		bi.getGraphics().drawImage(img, 0, 0, null);
+
+	private BitSet fill(BufferedImage img, int xSeed, int ySeed, Color col) {
 		int x = xSeed;
 		int y = ySeed;
-		int width = bi.getWidth();
-		int height = bi.getHeight();
+		int width = img.getWidth();
+		int height = img.getHeight();
 
-		DataBufferInt data = (DataBufferInt) (bi.getRaster().getDataBuffer());
-		int[] pixels = data.getData();
+		int pixels [] = null;
+		WritableRaster wr = img.getRaster();
+		if (wr.getDataBuffer() instanceof DataBufferInt) {
+			pixels = ((DataBufferInt) wr.getDataBuffer()).getData();
+		}
+		if (pixels == null) {
+			Main.errMsg("Undesirable extra BufferedImage conversion being done...", false);
+			BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+			bi.getGraphics().drawImage(img, 0, 0, null);
+			pixels = ((DataBufferInt) bi.getRaster().getDataBuffer()).getData();
+		}
 
 		if (x >= 0 && x < width && y >= 0 && y < height) {
 
-			int oldColor = pixels[y * width + x];
+			// ignore any red marks (the marks were put there for reference, but shouldn't be used to find boundaries)
+			int oldColor = pixels[y*width + x] == Color.RED.getRGB() ? 0 : pixels[y * width + x];
 			int fillColor = col.getRGB();
 
 			if (oldColor != fillColor) {
@@ -290,42 +246,59 @@ class PuzzleDescriptor {
 		return null;
 	}
 	
-	private BufferedImage getPiece(int x, int y, BufferedImage template, BufferedImage origImg) {
-		int width = template.getWidth();
-		ArrayList<Integer> pixles = fill(template, x, y, Color.GREEN);
-		ArrayList<int[]> points = new ArrayList<int[]>();
-		for (int i : pixles) {
-			int[] j = new int[2];
-			j[0] = i % width;
-			j[1] = (i - j[0]) / width;
-			points.add(j);
-		}
+	private BufferedImage getPiece(int seedx, int seedy, BufferedImage template, BufferedImage origImg, int center[]) {
+		int width = template.getWidth(null);
+		BitSet pixles = fill(template, seedx, seedy, Color.GREEN);
 		int maxH = 1;
 		int maxW = 1;
-		int minW = template.getWidth();
-		int minH = template.getHeight();
-		for (int[] i : points) {
-			if (i[0] > maxW)
-				maxW = i[0];
-			if (i[1] > maxH)
-				maxH = i[1];
-			if (i[0] < minW)
-				minW = i[0];
-			if (i[1] < minH)
-				minH = i[1];
+		int minW = width;
+		int minH = width;
+		for (int i = pixles.nextSetBit(0); i >= 0; i = pixles.nextSetBit(i+1)) {
+			int y = i / width;
+			int x = i - y*width;
+			if (x > maxW) maxW = x;
+			if (y > maxH) maxH = y;
+			if (x < minW) minW = x;
+			if (y < minH) minH = y;
 		}
 		BufferedImage image = new BufferedImage(maxW - minW + 1, maxH - minH + 1, BufferedImage.TYPE_INT_ARGB);
-		for (int[] i : points) {
-			image.setRGB(i[0] - minW, i[1] - minH, origImg.getRGB(i[0], i[1]));
+		for (int i = pixles.nextSetBit(0); i >= 0; i = pixles.nextSetBit(i+1)) {
+			int y = i / width;
+			int x = i - y*width;
+			int pix = origImg.getRGB(x, y);
+			image.setRGB(x - minW, y - minH, pix);
+			if (pix == Color.RED.getRGB() && center != null) {
+				center[0] = x - minW;
+				center[1] = y - minH;
+			}
 		}
 		return image;
 	}
 
+	private void findCenter(int seedx, int seedy, BufferedImage template, BufferedImage image, int center[]) {
+		int width = template.getWidth();
+		BitSet pixles = fill(template, seedx, seedy, Color.GREEN);
+		int minW = template.getWidth();
+		int minH = template.getHeight();
+		int centerx = -1, centery = -1;
+		for (int i = pixles.nextSetBit(0); i >= 0; i = pixles.nextSetBit(i+1)) {
+			int y = i / width;
+			int x = i - y*width;
+			if (x < minW) minW = x;
+			if (y < minH) minH = y;
+			if (image.getRGB(x,y) == Color.RED.getRGB()) {
+				centerx = x;
+				centery = y;
+			}
+		}
+		center[0] = centerx - minW;
+		center[1] = centery - minH;
+	}
+
 	private static BufferedImage copyBufferedImage(BufferedImage bi) {
-		ColorModel cm = bi.getColorModel();
-		boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
-		WritableRaster raster = bi.copyData(null);
-		return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
+		BufferedImage bi2 = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		bi2.getGraphics().drawImage(bi, 0, 0, null);
+		return bi2;
 	}
 
 	

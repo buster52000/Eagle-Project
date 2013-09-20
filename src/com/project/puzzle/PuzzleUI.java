@@ -155,7 +155,7 @@ public class PuzzleUI extends JFrame {
 		currentImage = img;
 		completed = false;
 
-		final PuzzleDescriptor puzzle = new PuzzleDescriptor();
+		final PuzzleDescriptorOld puzzle = new PuzzleDescriptorOld();
 		puzzle.preparePuzzle(img, template);
 
 		puzzlePanel.removeAll();
@@ -309,7 +309,7 @@ public class PuzzleUI extends JFrame {
 		}
 	}
 
-	public void checkNear(PicturePanel p, PuzzleDescriptor puzzle) {
+	public void checkNear(PicturePanel p, PuzzleDescriptorOld puzzle) {
 		int x = 0;
 		int y = 0;
 		for (int i = 0; i < piecePanels.length; i++)
