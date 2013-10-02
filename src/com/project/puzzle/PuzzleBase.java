@@ -31,10 +31,21 @@ public class PuzzleBase {
 	private boolean puzzleLoaded;
 	private FutureAction endGameTimer;
 
+	@SuppressWarnings("serial")
 	public PuzzleBase() {
 		puzzles = new ArrayList<Puzzle>();
 		templates = new ArrayList<BufferedImage>();
-		ui = new PuzzleUI();
+		ui = new PuzzleUI() {
+
+			@Override
+			public void complete() {
+				puzzleLoaded = false;
+				ui.displayCorrect();
+				showDescriptionDialog(currentPuzzle.getDescription(), new ImageIcon(currentPuzzle.getImage()), currentPuzzle.getName());
+				nextPuzzle();
+			}
+			
+		};
 		puzzleLoaded = false;
 		endGameTimer = new FutureAction() {
 
@@ -51,8 +62,6 @@ public class PuzzleBase {
 			}
 		};
 		
-		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
-		
 		ui.addMouseMotionListener(new MouseMotionListener() {
 
 			@Override
@@ -67,35 +76,70 @@ public class PuzzleBase {
 		});
 	}
 
-	public void playGame() {
-		loadPuzzles();
-		loadTemplates();
-		while (puzzles.size() > 0 && !ui.exit()) {
-			if (puzzleLoaded) {
-				Main.errMsg("nextPuzzle called while puzzle was still loaded", false);
-			} else {
-				Random rand = new Random();
-				int size = puzzles.size();
-				currentPuzzle = puzzles.get(rand.nextInt(size));
-				puzzleLoaded = true;
-				puzzles.remove(currentPuzzle);
-				int i = rand.nextInt(templates.size());
-				ui.nextPuzzle(currentPuzzle.getImage(), templates.get(i), currentPuzzle.getName());
-				while (!ui.completed() && !ui.exit()) {
-					try {
-						Thread.sleep(125);
-					} catch (InterruptedException e) {
-						Main.saveStackTrace(e);
-					}
-				}
-				if (!ui.exit()) {
-					ui.displayCorrect();
-					showDescriptionDialog(currentPuzzle.getDescription(), new ImageIcon(currentPuzzle.getImage()), currentPuzzle.getName());
+	public void playGame(ArrayList<BufferedImage> template, ArrayList<Puzzle> puzzle) {
+		this.templates = template;
+		this.puzzles = puzzle;
+		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
+		puzzleLoaded = false;
+		nextPuzzle();
+		synchronized (ui) {
+			while(!ui.exit()) {
+				try {
+					ui.wait();
+				} catch (InterruptedException e) {
+					Main.saveStackTrace(e);
 				}
 			}
 		}
-		ui.gameOver();
+		endGameTimer.cancel();
 	}
+	
+	public void nextPuzzle() {
+		if(puzzleLoaded)
+			Main.errMsg("nextPuzzle called while puzzle still loaded proceding anyway", false);
+		if(puzzles.size() > 0) {
+			Random rand = new Random();
+			int size = puzzles.size();
+			currentPuzzle = puzzles.get(rand.nextInt(size));
+			puzzleLoaded = true;
+			puzzles.remove(currentPuzzle);
+			int i = rand.nextInt(templates.size());
+			ui.newPuzzle(currentPuzzle.getImage(), PuzzleDescriptor.copyBufferedImage(templates.get(i)), currentPuzzle.getName());
+		} else
+			ui.gameOver();
+	}
+	
+//	public void playGame(ArrayList<BufferedImage> template, ArrayList<Puzzle> puzzle) {
+//		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
+//		puzzleLoaded = false;
+//		this.templates = template;
+//		this.puzzles = puzzle;
+//		while (puzzles.size() > 0 && !ui.exit()) {
+//			if (puzzleLoaded) {
+//				Main.errMsg("nextPuzzle called while puzzle was still loaded", false);
+//			} else {
+//				Random rand = new Random();
+//				int size = puzzles.size();
+//				currentPuzzle = puzzles.get(rand.nextInt(size));
+//				puzzleLoaded = true;
+//				puzzles.remove(currentPuzzle);
+//				int i = rand.nextInt(templates.size());
+//				ui.nextPuzzle(currentPuzzle.getImage(), PuzzleDescriptor.copyBufferedImage(templates.get(i)), currentPuzzle.getName());
+//				while (!ui.completed() && !ui.exit()) {
+//					try {
+//						Thread.sleep(125);
+//					} catch (InterruptedException e) {
+//						Main.saveStackTrace(e);
+//					}
+//				}
+//				if (!ui.exit()) {
+//					ui.displayCorrect();
+//					showDescriptionDialog(currentPuzzle.getDescription(), new ImageIcon(currentPuzzle.getImage()), currentPuzzle.getName());
+//				}
+//			}
+//		}
+//		ui.gameOver();
+//	}
 
 	public void showDescriptionDialog(String str, ImageIcon ico, String title) {
 		if (ico.getIconHeight() > 500 || ico.getIconWidth() > 500) {
@@ -139,11 +183,12 @@ public class PuzzleBase {
 		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
 	}
 
-	public void loadTemplates() {
+	public static ArrayList<BufferedImage> loadTemplates() {
+		ArrayList<BufferedImage> templates = new ArrayList<BufferedImage>();
 		File dir = new File("gameFiles/puzzleTemplates/");
 		if (!dir.exists()) {
 			dir.mkdirs();
-			return;
+			return templates;
 		}
 		File[] files = dir.listFiles();
 		for (File f : files) {
@@ -157,13 +202,15 @@ public class PuzzleBase {
 				templates.add(img);
 			}
 		}
+		return templates;
 	}
 
-	public void loadPuzzles() {
+	public static ArrayList<Puzzle> loadPuzzles() {
+		ArrayList<Puzzle> puzzles = new ArrayList<Puzzle>();
 		File dir = new File("gameFiles/puzzles/");
 		if (!dir.exists()) {
 			dir.mkdirs();
-			return;
+			return puzzles;
 		}
 		File[] files = dir.listFiles();
 		for (File f : files) {
@@ -202,6 +249,7 @@ public class PuzzleBase {
 				Main.errMsg("The puzzle file " + f.getName() + "did not load correctly", false);
 			}
 		}
+		return puzzles;
 	}
 
 }

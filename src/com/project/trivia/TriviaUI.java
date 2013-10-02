@@ -36,7 +36,6 @@ import javax.swing.SwingUtilities;
 import com.project.base.BaseUI;
 import com.project.base.Main;
 
-
 @SuppressWarnings("serial")
 public class TriviaUI extends JFrame implements ActionListener {
 
@@ -82,7 +81,7 @@ public class TriviaUI extends JFrame implements ActionListener {
 		gbc_btnMainMenu.gridy = 0;
 		contentPane.add(btnMainMenu, gbc_btnMainMenu);
 		btnMainMenu.setFocusPainted(false);
-		
+
 		topPanel = new JPanel();
 		GridBagConstraints gbc_topPanel = new GridBagConstraints();
 		gbc_topPanel.gridwidth = 2;
@@ -287,7 +286,7 @@ public class TriviaUI extends JFrame implements ActionListener {
 		rdbtnC.setForeground(Color.WHITE);
 		rdbtnD.setForeground(Color.WHITE);
 		lblQuest.setForeground(Color.WHITE);
-		
+
 		lblSigalMuseum.setFont(new Font("Serif", Font.BOLD, 48));
 		lblA.setFont(new Font("Serif", Font.PLAIN, 26));
 		lblB.setFont(new Font("Serif", Font.PLAIN, 26));
@@ -298,12 +297,12 @@ public class TriviaUI extends JFrame implements ActionListener {
 		rdbtnC.setFont(new Font("Serif", Font.PLAIN, 26));
 		rdbtnD.setFont(new Font("Serif", Font.PLAIN, 26));
 		lblQuest.setFont(new Font("Serif", Font.PLAIN, 36));
-		
+
 		rdbtnA.setFocusPainted(false);
 		rdbtnB.setFocusPainted(false);
 		rdbtnC.setFocusPainted(false);
 		rdbtnD.setFocusPainted(false);
-		
+
 		topPanel.setOpaque(false);
 		leftPanel.setOpaque(false);
 		panelA.setOpaque(false);
@@ -318,10 +317,10 @@ public class TriviaUI extends JFrame implements ActionListener {
 		rdbtnB.setOpaque(false);
 		rdbtnC.setOpaque(false);
 		rdbtnD.setOpaque(false);
-		
+
 		btnSubmit = new JButton("Submit");
 		panelSubmit.add(btnSubmit);
-		
+
 		btnSubmit.setForeground(Color.BLACK);
 		btnSubmit.setFont(new Font("Serif", Font.PLAIN, 26));
 		btnSubmit.setFocusPainted(false);
@@ -339,14 +338,14 @@ public class TriviaUI extends JFrame implements ActionListener {
 
 		setExtendedState(MAXIMIZED_BOTH);
 		setUndecorated(true);
-		setVisible(true);
 	}
 
 	public JButton getMenuButton() {
 		return btnMainMenu;
 	}
-	
+
 	public void nextTrivia(Trivia trivia) {
+		exit = false;
 		numHidden = 0;
 		currentTrivia = trivia;
 		group.clearSelection();
@@ -369,6 +368,10 @@ public class TriviaUI extends JFrame implements ActionListener {
 		lblB.setFont(font);
 		lblC.setFont(font);
 		lblD.setFont(font);
+		rdbtnA.setEnabled(true);
+		rdbtnB.setEnabled(true);
+		rdbtnC.setEnabled(true);
+		rdbtnD.setEnabled(true);
 		BufferedImage pic = (BufferedImage) trivia.getPic();
 		int width = BaseUI.PIC_WIDTH;
 		int height = pic.getHeight();
@@ -377,6 +380,8 @@ public class TriviaUI extends JFrame implements ActionListener {
 		ico = new ImageIcon(img);
 		lblPic.setIcon(ico);
 		repaint();
+		setVisible(true);
+		requestFocusInWindow();
 	}
 
 	public boolean exit() {
@@ -458,7 +463,8 @@ public class TriviaUI extends JFrame implements ActionListener {
 					Main.errMsg("LineUnavailableException for gameFiles/sounds/correct.wav", false);
 					Main.saveStackTrace(e);
 				}
-				clip.start();
+				if (Main.sound)
+					clip.start();
 				try {
 					Thread.sleep(2000);
 				} catch (InterruptedException e) {
@@ -498,7 +504,8 @@ public class TriviaUI extends JFrame implements ActionListener {
 					Main.errMsg("LineUnavailableException for gameFiles/sounds/wrong.wav", false);
 					Main.saveStackTrace(e);
 				}
-				clip.start();
+				if (Main.sound)
+					clip.start();
 				try {
 					Thread.sleep(2000);
 				} catch (InterruptedException e) {
@@ -526,9 +533,11 @@ public class TriviaUI extends JFrame implements ActionListener {
 	}
 
 	public void gameOver() {
-		setVisible(false);
-		dispose();
-		exit = true;
+		synchronized (this) {
+			exit = true;
+			notifyAll();
+			setVisible(false);
+		}
 	}
 
 	@Override

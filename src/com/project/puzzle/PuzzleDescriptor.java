@@ -295,7 +295,7 @@ class PuzzleDescriptor {
 		center[1] = centery - minH;
 	}
 
-	private static BufferedImage copyBufferedImage(BufferedImage bi) {
+	public static BufferedImage copyBufferedImage(BufferedImage bi) {
 		BufferedImage bi2 = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_INT_ARGB);
 		bi2.getGraphics().drawImage(bi, 0, 0, null);
 		return bi2;

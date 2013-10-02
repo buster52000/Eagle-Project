@@ -34,13 +34,13 @@ import java.util.ArrayList;
 import java.util.Random;
 
 @SuppressWarnings("serial")
-public class PuzzleUI extends JFrame {
-	
+public abstract class PuzzleUI extends JFrame {
+
 	private JPanel contentPane, puzzlePanel, buttonPanel;
 	private PicturePanel[][] piecePanels;
 	private JLabel lblSigalMuseum, lblItemName;
 	private JButton btnMenu, btnRestart;
-	private boolean exit, completed;
+	private boolean exit;
 	private BufferedImage currentImage, currentTemplate;
 	private String name;
 
@@ -52,7 +52,6 @@ public class PuzzleUI extends JFrame {
 		setForeground(Color.WHITE);
 
 		exit = false;
-		completed = false;
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
@@ -109,7 +108,7 @@ public class PuzzleUI extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				nextPuzzle(currentImage, currentTemplate, name);
+				newPuzzle(currentImage, currentTemplate, name);
 			}
 		});
 
@@ -145,15 +144,18 @@ public class PuzzleUI extends JFrame {
 		gbc_puzzlePanel.gridy = 3;
 		contentPane.add(puzzlePanel, gbc_puzzlePanel);
 		puzzlePanel.setLayout(null);
-		setVisible(true);
 	}
 
-	public void nextPuzzle(BufferedImage img, BufferedImage template, String name) {
+	public abstract void complete();
+
+	public void newPuzzle(BufferedImage img, BufferedImage template, String name) {
+		exit = false;
+		setVisible(true);
 		this.name = name;
 		lblItemName.setText(name);
 		Main.infoMsg("Preparing a puzzle");
 		currentImage = img;
-		completed = false;
+		currentTemplate = PuzzleDescriptor.copyBufferedImage(template);
 
 		final PuzzleDescriptor puzzle = new PuzzleDescriptor();
 		puzzle.preparePuzzle(img, template);
@@ -236,7 +238,7 @@ public class PuzzleUI extends JFrame {
 							checkNear(panel, puzzle);
 						}
 						if (p.getExtendedNeighbors(new ArrayList<PicturePanel>()).size() == puzzle.getXPieces() * puzzle.getYPieces()) {
-							completed = true;
+							complete();
 						}
 					}
 				});
@@ -245,8 +247,8 @@ public class PuzzleUI extends JFrame {
 		}
 
 		Random rand = new Random();
-		for(int i = 0; i < puzzle.getXPieces(); i++) {
-			for(int j = 0; j < puzzle.getYPieces(); j++) {
+		for (int i = 0; i < puzzle.getXPieces(); i++) {
+			for (int j = 0; j < puzzle.getYPieces(); j++) {
 				int randX = rand.nextInt(puzzlePanel.getWidth() - piecePanels[i][j].getWidth());
 				int randY = rand.nextInt(puzzlePanel.getHeight() - piecePanels[i][j].getHeight());
 				piecePanels[i][j].setLocation(randX, randY);
@@ -273,10 +275,6 @@ public class PuzzleUI extends JFrame {
 		Main.infoMsg("done all puzzle prep work");
 	}
 
-	public boolean completed() {
-		return completed;
-	}
-
 	public void displayCorrect() {
 		AudioInputStream as = null;
 		Clip clip = null;
@@ -294,7 +292,8 @@ public class PuzzleUI extends JFrame {
 			Main.errMsg("LineUnavailableException for gameFiles/sounds/correct.wav", false);
 			Main.saveStackTrace(e);
 		}
-		clip.start();
+		if (Main.sound)
+			clip.start();
 		try {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
@@ -365,9 +364,12 @@ public class PuzzleUI extends JFrame {
 	}
 
 	public void gameOver() {
-		setVisible(false);
-		dispose();
-		exit = true;
+		synchronized (this) {
+			setVisible(false);
+			exit = true;
+			notifyAll();
+			puzzlePanel.removeAll();
+		}
 	}
 
 }

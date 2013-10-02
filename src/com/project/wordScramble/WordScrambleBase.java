@@ -27,93 +27,138 @@ public class WordScrambleBase {
 	private ScrambleUI ui;
 	private ArrayList<Scramble> scrambles;
 	private FutureAction endGameTimer;
-	private boolean exit;
+	private Random rand;
+	private Scramble currentScramble;
+	private boolean scrambleLoaded;
 
+	@SuppressWarnings("serial")
 	public WordScrambleBase() {
 		scrambles = new ArrayList<Scramble>();
-		ui = new ScrambleUI();
-		
+		ui = new ScrambleUI() {
+
+			@Override
+			public void complete() {
+				scrambleLoaded = false;
+				ui.displayCorrect();
+				showDescriptionDialog(currentScramble.getDescription(), new ImageIcon(currentScramble.getPicture()), currentScramble.getWord());
+				nextScramble();
+			}
+
+		};
+		rand = new Random();
+		currentScramble = null;
+
 		endGameTimer = new FutureAction() {
-			
+
 			@Override
 			public void performAction() {
 				ui.gameOver();
-				exit = true;
 				Main.infoMsg("Word scramble game timed out");
 			}
-			
+
 			@Override
 			public void actionCancelled() {
 				ui.gameOver();
-				exit = true;
 				Main.errMsg("Word scrambel end game timer canceled", false);
 			}
 		};
-		
-		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
-		
+
 		ui.addMouseMotionListener(new MouseMotionListener() {
-			
+
 			@Override
 			public void mouseMoved(MouseEvent e) {
 				endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 			}
-			
+
 			@Override
 			public void mouseDragged(MouseEvent e) {
 				endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 			}
 		});
-		
+
 	}
 
-	public void playGame() {
-		loadScrambles();
-		exit = false;
-		boolean scrambleLoaded = false;
-		Scramble currentScramble = null;
-		ArrayList<Scramble> unusedScrambles = scrambles;
-		Random rand = new Random();
-		while (!exit) {
-			if (scrambleLoaded && currentScramble != null) {
-				ui.newScramble(currentScramble);
-				while (scrambleLoaded) {
-					if (ui.inputWasCaptured()) {
-						if (ui.getCurrentText().equalsIgnoreCase(currentScramble.getWord())) {
-							scrambleLoaded = false;
-							ui.displayCorrect();
-							ImageIcon ico = new ImageIcon();
-							ico.setImage(currentScramble.getPicture());
-							showDescriptionDialog(currentScramble.getDescription(), ico, currentScramble.getWord());
-						} else if (ui.getCurrentText().length() == currentScramble.getWord().length())
-							ui.displayWrong();
-					} else if (ui.exitGameRequested()) {
-						scrambleLoaded = false;
-						exit = true;
-					}
-					try {
-						Thread.sleep(125);
-					} catch (InterruptedException e) {
-						Main.saveStackTrace(e);
-					}
+	public void playGame(ArrayList<Scramble> scrambles) {
+		this.scrambles = scrambles;
+		scrambleLoaded = false;
+		nextScramble();
+		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
+		synchronized (ui) {
+			while (!ui.exit()) {
+				try {
+					ui.wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
-				currentScramble = null;
-			} else if (scrambleLoaded && currentScramble == null) {
-				Main.errMsg("Word Scramble thinks Scramble is loaded but currentScramble is null", false);
-				throw new NullPointerException("currentScramble is null");
-			} else if (unusedScrambles.size() != 0) {
-				int i = rand.nextInt(unusedScrambles.size());
-				currentScramble = unusedScrambles.get(i);
-				unusedScrambles.remove(i);
-				scrambleLoaded = true;
-				ui.newScramble(currentScramble);
-			} else {
-				exit = true;
 			}
 		}
-		ui.gameOver();
-		Main.infoMsg("Word Scramble game completed");
+		endGameTimer.cancel();
 	}
+
+	private void nextScramble() {
+		if (scrambles.size() > 0) {
+			if (scrambleLoaded)
+				Main.errMsg("Scramble already loaded proceding anyway", false);
+			int i = rand.nextInt(scrambles.size());
+			currentScramble = scrambles.get(i);
+			scrambleLoaded = true;
+			scrambles.remove(i);
+			ui.newScramble(currentScramble);
+		} else {
+			ui.gameOver();
+		}
+	}
+
+	// public void playGame(ArrayList<Scramble> scrambles) {
+	// this.scrambles = scrambles;
+	// exit = false;
+	// endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
+	// boolean scrambleLoaded = false;
+	// Scramble currentScramble = null;
+	// ArrayList<Scramble> unusedScrambles = scrambles;
+	// Random rand = new Random();
+	// while (!exit) {
+	// if (scrambleLoaded && currentScramble != null) {
+	// ui.newScramble(currentScramble);
+	// while (scrambleLoaded) {
+	// if (ui.inputWasCaptured()) {
+	// if (ui.getCurrentText().equalsIgnoreCase(currentScramble.getWord())) {
+	// scrambleLoaded = false;
+	// ui.displayCorrect();
+	// ImageIcon ico = new ImageIcon();
+	// ico.setImage(currentScramble.getPicture());
+	// showDescriptionDialog(currentScramble.getDescription(), ico,
+	// currentScramble.getWord());
+	// } else if (ui.getCurrentText().length() ==
+	// currentScramble.getWord().length())
+	// ui.displayWrong();
+	// } else if (ui.exit()) {
+	// scrambleLoaded = false;
+	// exit = true;
+	// }
+	// try {
+	// Thread.sleep(125);
+	// } catch (InterruptedException e) {
+	// Main.saveStackTrace(e);
+	// }
+	// }
+	// currentScramble = null;
+	// } else if (scrambleLoaded && currentScramble == null) {
+	// Main.errMsg("Word Scramble thinks Scramble is loaded but currentScramble is null",
+	// false);
+	// throw new NullPointerException("currentScramble is null");
+	// } else if (unusedScrambles.size() != 0) {
+	// int i = rand.nextInt(unusedScrambles.size());
+	// currentScramble = unusedScrambles.get(i);
+	// unusedScrambles.remove(i);
+	// scrambleLoaded = true;
+	// ui.newScramble(currentScramble);
+	// } else {
+	// exit = true;
+	// }
+	// }
+	// ui.gameOver();
+	// }
 
 	public void showDescriptionDialog(String str, ImageIcon ico, String title) {
 		if (ico.getIconHeight() > 500 || ico.getIconWidth() > 500) {
@@ -157,7 +202,8 @@ public class WordScrambleBase {
 		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
 	}
 
-	public void loadScrambles() {
+	public static ArrayList<Scramble> loadScrambles() {
+		ArrayList<Scramble> scrambles = new ArrayList<Scramble>();
 		File dir = new File("gameFiles/scrambles/");
 		if (!dir.isDirectory())
 			dir.mkdirs();
@@ -194,6 +240,7 @@ public class WordScrambleBase {
 				scrambles.add(new Scramble(word, text, pic, description));
 			}
 		}
+		return scrambles;
 	}
 
 	public static String scrambleWord(String word) {

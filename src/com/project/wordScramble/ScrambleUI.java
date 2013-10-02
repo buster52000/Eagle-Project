@@ -36,26 +36,24 @@ import javax.swing.border.EmptyBorder;
 import com.project.base.BaseUI;
 import com.project.base.Main;
 
-
 @SuppressWarnings("serial")
-public class ScrambleUI extends JFrame {
+public abstract class ScrambleUI extends JFrame {
 
 	private ArrayList<JLabel> answerLabels, scrambleLabels;
-	private JPanel contentPane, titlePanel, mainLabelPanel, rightPanel,
-			answerLabelPanel, scrambleLabelPanel, textPanel, picPanel, btnPanel;
+	private JPanel contentPane, titlePanel, mainLabelPanel, rightPanel, answerLabelPanel, scrambleLabelPanel, textPanel, picPanel, btnPanel;
 	private JLabel lblSigalMuseum, lblText, lblPic;
-	private boolean inputCaptured, exitGame;
+	private boolean exit;
 	private String currentText;
 	private ImageIcon ico;
 	private JButton btnRestartScramble, btnMainMenu;
 	private Scramble scramble;
 
 	public ScrambleUI() {
-		
+
 		getContentPane().setBackground(Color.BLACK);
 		scramble = null;
 
-		exitGame = false;
+		exit = false;
 		answerLabels = new ArrayList<JLabel>();
 		scrambleLabels = new ArrayList<JLabel>();
 
@@ -70,7 +68,7 @@ public class ScrambleUI extends JFrame {
 		gbl_contentPane.columnWeights = new double[] { 1.0, 1.0, Double.MIN_VALUE };
 		gbl_contentPane.rowWeights = new double[] { 0.0, 0.0, 1.0, Double.MIN_VALUE };
 		contentPane.setLayout(gbl_contentPane);
-		
+
 		btnPanel = new JPanel();
 		GridBagConstraints gbc_panel1 = new GridBagConstraints();
 		gbc_panel1.gridwidth = 2;
@@ -80,13 +78,13 @@ public class ScrambleUI extends JFrame {
 		gbc_panel1.gridy = 0;
 		contentPane.add(btnPanel, gbc_panel1);
 		GridBagLayout gbl_panel = new GridBagLayout();
-		gbl_panel.columnWidths = new int[]{0, 0, 0};
-		gbl_panel.rowHeights = new int[]{0, 0};
-		gbl_panel.columnWeights = new double[]{0.0, 0.0, Double.MIN_VALUE};
-		gbl_panel.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+		gbl_panel.columnWidths = new int[] { 0, 0, 0 };
+		gbl_panel.rowHeights = new int[] { 0, 0 };
+		gbl_panel.columnWeights = new double[] { 0.0, 0.0, Double.MIN_VALUE };
+		gbl_panel.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
 		btnPanel.setLayout(gbl_panel);
 		btnPanel.setOpaque(false);
-		
+
 		btnMainMenu = new JButton("Main Menu");
 		btnMainMenu.setPreferredSize(new Dimension(115, 22));
 		btnMainMenu.setMinimumSize(new Dimension(83, 22));
@@ -97,14 +95,14 @@ public class ScrambleUI extends JFrame {
 		gbc_btnMainMenu.gridx = 0;
 		gbc_btnMainMenu.gridy = 0;
 		btnMainMenu.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				exitGame = true;
+				gameOver();
 			}
 		});
 		btnPanel.add(btnMainMenu, gbc_btnMainMenu);
-		
+
 		btnRestartScramble = new JButton("Restart Scramble");
 		btnRestartScramble.setOpaque(false);
 		btnRestartScramble.setPreferredSize(new Dimension(150, 22));
@@ -115,7 +113,7 @@ public class ScrambleUI extends JFrame {
 		gbc_btnRestartScramble.gridx = 1;
 		gbc_btnRestartScramble.gridy = 0;
 		btnRestartScramble.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				newScramble(scramble);
@@ -216,25 +214,34 @@ public class ScrambleUI extends JFrame {
 		picPanel.setOpaque(false);
 		lblSigalMuseum.setForeground(Color.WHITE);
 		lblText.setForeground(Color.WHITE);
-		
+
 		setExtendedState(MAXIMIZED_BOTH);
 		setUndecorated(true);
-		setVisible(true);
 	}
-	
-	public boolean exitGameRequested() {
-		return exitGame;
+
+	public abstract void complete();
+
+	public boolean exit() {
+		return exit;
 	}
 
 	public void newScramble(Scramble scramble) {
+		exit = false;
 		this.scramble = scramble;
 		answerLabelPanel.removeAll();
 		scrambleLabelPanel.removeAll();
 		lblText.setText(scramble.getText());
 		lblText.setHorizontalAlignment(SwingConstants.CENTER);
 		BufferedImage pic = (BufferedImage) scramble.getPicture();
-		int width = BaseUI.PIC_WIDTH;
-		int height = pic.getHeight();
+		int width;
+		int height;
+		if (pic.getWidth() > pic.getHeight()) {
+			width = BaseUI.PIC_WIDTH;
+			height = pic.getHeight();
+		} else {
+			width = pic.getWidth();
+			height = BaseUI.PIC_WIDTH;
+		}
 		height = (width * height) / pic.getWidth();
 		Image img = pic.getScaledInstance(width, height, Image.SCALE_SMOOTH);
 		ico = new ImageIcon(img);
@@ -291,9 +298,8 @@ public class ScrambleUI extends JFrame {
 						}
 					}
 					refreshCurrentText();
-					inputCaptured = true;
+					inputCaptured();
 					repaint();
-					revalidate();
 				}
 			});
 			a.addMouseListener(new MouseListener() {
@@ -318,36 +324,36 @@ public class ScrambleUI extends JFrame {
 						}
 					}
 					refreshCurrentText();
-					inputCaptured = true;
+					inputCaptured();
 					repaint();
-					revalidate();
 				}
 			});
 			scrambleLabels.add(s);
 			answerLabels.add(a);
-			for (JLabel l : answerLabels) {
-				answerLabelPanel.add(l);
-			}
-			for (JLabel l : scrambleLabels) {
-				scrambleLabelPanel.add(l);
-			}
+		}
+		for (JLabel l : answerLabels) {
+			answerLabelPanel.add(l);
+		}
+		for (JLabel l : scrambleLabels) {
+			scrambleLabelPanel.add(l);
 		}
 		repaint();
-		revalidate();
+		setVisible(true);
 	}
 
 	public void gameOver() {
-		exitGame = true;
-		setVisible(false);
-		dispose();
+		synchronized (this) {
+			exit = true;
+			notifyAll();
+			setVisible(false);
+		}
 	}
 
-	public boolean inputWasCaptured() {
-		if (inputCaptured) {
-			inputCaptured = false;
-			return true;
-		}
-		return inputCaptured;
+	private void inputCaptured() {
+		if (scramble.getText().equals(getCurrentText())) {
+			complete();
+		} else if (scramble.getText().length() == getCurrentText().length())
+			displayWrong();
 	}
 
 	public String getCurrentText() {
@@ -372,7 +378,8 @@ public class ScrambleUI extends JFrame {
 			Main.errMsg("LineUnavailableException for gameFiles/sounds/correct.wav", false);
 			Main.saveStackTrace(e);
 		}
-		clip.start();
+		if (Main.sound)
+			clip.start();
 		try {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
@@ -386,7 +393,7 @@ public class ScrambleUI extends JFrame {
 			Main.saveStackTrace(e);
 		}
 	}
-	
+
 	public void displayWrong() {
 		lblPic.setIcon(new ImageIcon("gameFiles/pics/xMark.png"));
 		AudioInputStream as = null;
@@ -405,7 +412,8 @@ public class ScrambleUI extends JFrame {
 			Main.errMsg("LineUnavailableException for gameFiles/sounds/wrong.wav", false);
 			Main.saveStackTrace(e);
 		}
-		clip.start();
+		if (Main.sound)
+			clip.start();
 		try {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
@@ -419,7 +427,7 @@ public class ScrambleUI extends JFrame {
 			Main.saveStackTrace(e);
 		}
 		lblPic.setIcon(ico);
-		for(int i = 0; i < answerLabels.size(); i++) {
+		for (int i = 0; i < answerLabels.size(); i++) {
 			scrambleLabels.get(i).setText(answerLabels.get(i).getText());
 			answerLabels.get(i).setText("");
 		}

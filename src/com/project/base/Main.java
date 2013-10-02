@@ -13,9 +13,20 @@ import com.google.common.base.Throwables;
 public class Main {
 
 	private static File logFile;
+	public static boolean sound;
 
 	public static void main(String[] args) {
 		try {
+			if (args.length < 1 || !"-s".equals(args[0])) {
+				System.out.println("Sound on disable sound with -s 0");
+				sound = false;
+			} else {
+				if (args[1].equals("0")) {
+					Main.infoMsg("Sound Disabled remove the argument -s 0 to turn on sound");
+					sound = false;
+				} else
+					sound = true;
+			}
 			logFile = new File("game.log");
 			try {
 				if (!logFile.exists()) {
@@ -49,7 +60,7 @@ public class Main {
 	}
 
 	public static void errMsg(String msg, boolean fatal) {
-		if(logFile == null)
+		if (logFile == null)
 			logFile = new File("game.log");
 		int date[] = getDate();
 		String dates[] = new String[3];
@@ -73,8 +84,8 @@ public class Main {
 	}
 
 	public static void infoMsg(String msg) {
-		if(logFile == null)
-			logFile = new File("/.sigal/game.log");
+		if (logFile == null)
+			logFile = new File("game.log");
 		int date[] = getDate();
 		String dates[] = new String[3];
 		for (int i = 0; i < 3; i++)

@@ -90,7 +90,6 @@ public class BaseUI extends JFrame implements Runnable, KeyListener {
 		c.gridx = 3;
 		menuPanel.add(game3, c);
 		ssPanel.add(sigalMuseum);
-		setVisible(true);
 	}
 
 	public void changeSS() {

@@ -40,37 +40,35 @@ public class TriviaBase {
 		triviaLoaded = false;
 		ui = new TriviaUI();
 		timer = new Timer();
-		
+
 		endGameTimer = new FutureAction() {
-			
+
 			@Override
 			public void performAction() {
 				ui.gameOver();
 				Main.infoMsg("Trivia Game timed out");
 			}
-			
+
 			@Override
 			public void actionCancelled() {
 				ui.gameOver();
 				Main.errMsg("Trivia end game timer canceled", false);
 			}
 		};
-		
-		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
-		
+
 		ui.addMouseMotionListener(new MouseMotionListener() {
-			
+
 			@Override
 			public void mouseMoved(MouseEvent e) {
 				endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 			}
-			
+
 			@Override
 			public void mouseDragged(MouseEvent e) {
 				endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 			}
 		});
-		
+
 		ui.getSubmitButton().addActionListener(new ActionListener() {
 
 			@Override
@@ -103,24 +101,30 @@ public class TriviaBase {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				timer.cancel();
+				triviaLoaded = false;
+				currentTrivia = null;
 				ui.gameOver();
 			}
 		});
 	}
 
-	public void playGame() {
-		loadTrivia();
+	public void playGame(ArrayList<Trivia> trivia) {
+		this.trivia = trivia;
+		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 		nextTrivia();
-		while (!ui.exit()) {
-			try {
-				Thread.sleep(125);
-			} catch (InterruptedException e) {
-				Main.saveStackTrace(e);
+		synchronized (ui) {
+			while (!ui.exit()) {
+				try {
+					ui.wait();
+				} catch (InterruptedException e) {
+					Main.saveStackTrace(e);
+				}
 			}
 		}
+		endGameTimer.cancel();
 	}
 
-	public void showDescriptionDialog(String str, ImageIcon ico, String title) {
+	private void showDescriptionDialog(String str, ImageIcon ico, String title) {
 		if (ico.getIconHeight() > 500 || ico.getIconWidth() > 500) {
 			int h = 1;
 			int w = 1;
@@ -162,7 +166,7 @@ public class TriviaBase {
 		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
 	}
 
-	public void nextTrivia() {
+	private void nextTrivia() {
 		timer.cancel();
 		timer = new Timer();
 		if (trivia.size() > 0) {
@@ -202,9 +206,7 @@ public class TriviaBase {
 					@Override
 					public void run() {
 						triviaLoaded = false;
-						ImageIcon ico = new ImageIcon();
-						ico.setImage(currentTrivia.getPic());
-						showDescriptionDialog(currentTrivia.getDescription(), ico, currentTrivia.getAnswers()[3]);
+						showDescriptionDialog(currentTrivia.getDescription(), new ImageIcon(currentTrivia.getPic()), currentTrivia.getAnswers()[3]);
 						nextTrivia();
 					}
 				}, 50000);
@@ -220,8 +222,9 @@ public class TriviaBase {
 		}
 	}
 
-	private void loadTrivia() {
+	public static ArrayList<Trivia> loadTrivia() {
 		File dir = new File("gameFiles/trivia/");
+		ArrayList<Trivia> triv = new ArrayList<Trivia>();
 		if (dir.exists()) {
 			File[] files = dir.listFiles();
 			for (File f : files) {
@@ -248,11 +251,12 @@ public class TriviaBase {
 					Main.errMsg("File with improper format found when loading trivia files", false);
 					Main.saveStackTrace(e);
 				}
-				trivia.add(new Trivia(img, question, answers, description));
+				triv.add(new Trivia(img, question, answers, description));
 			}
 		} else {
 			dir.mkdirs();
 		}
+		return triv;
 	}
 
 }
