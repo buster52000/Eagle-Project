@@ -1,8 +1,10 @@
 package com.project.wordScramble;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.io.BufferedReader;
 import java.io.File;
@@ -26,10 +28,12 @@ public class WordScrambleBase {
 
 	private ScrambleUI ui;
 	private ArrayList<Scramble> scrambles;
-	private FutureAction endGameTimer;
+	private FutureAction endGameTimer, hintTimer;
 	private Random rand;
 	private Scramble currentScramble;
 	private boolean scrambleLoaded;
+	
+	private static final int HINT_WAIT_TIME = 5000;
 
 	@SuppressWarnings("serial")
 	public WordScrambleBase() {
@@ -45,6 +49,49 @@ public class WordScrambleBase {
 			}
 
 		};
+		
+		hintTimer = new FutureAction() {
+			
+			@Override
+			public void performAction() {
+				ui.hint();
+				hintTimer.startOrRestartCountdown(HINT_WAIT_TIME);
+			}
+			
+			@Override
+			public void actionCancelled() {
+				
+			}
+		};
+		
+		ui.addMouseListener(new MouseListener() {
+			
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				
+			}
+			
+			@Override
+			public void mousePressed(MouseEvent e) {
+				
+			}
+			
+			@Override
+			public void mouseExited(MouseEvent e) {
+				
+			}
+			
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				
+			}
+			
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				hintTimer.startOrRestartCountdown(HINT_WAIT_TIME);
+			}
+		});
+		
 		rand = new Random();
 		currentScramble = null;
 
@@ -58,8 +105,7 @@ public class WordScrambleBase {
 
 			@Override
 			public void actionCancelled() {
-				ui.gameOver();
-				Main.errMsg("Word scrambel end game timer canceled", false);
+				
 			}
 		};
 
@@ -83,6 +129,7 @@ public class WordScrambleBase {
 		scrambleLoaded = false;
 		nextScramble();
 		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
+		hintTimer.startOrRestartCountdown(HINT_WAIT_TIME);
 		synchronized (ui) {
 			while (!ui.exit()) {
 				try {
@@ -93,6 +140,7 @@ public class WordScrambleBase {
 			}
 		}
 		endGameTimer.cancel();
+		hintTimer.cancel();
 	}
 
 	private void nextScramble() {
@@ -199,6 +247,7 @@ public class WordScrambleBase {
 		UIManager.put("OptionPane.background", Color.BLACK);
 		UIManager.put("OptionPane.messageForeground", Color.WHITE);
 		UIManager.put("Panel.background", Color.BLACK);
+		UIManager.put("OptionPane.messageFont", new Font("Serif", Font.PLAIN, 30));
 		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
 	}
 

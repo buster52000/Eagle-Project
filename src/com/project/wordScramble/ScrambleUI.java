@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Random;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -46,12 +47,15 @@ public abstract class ScrambleUI extends JFrame {
 	private String currentText;
 	private ImageIcon ico;
 	private JButton btnRestartScramble, btnMainMenu;
-	private Scramble scramble;
+	private Scramble currentScramble;
+	private Random rand;
 
 	public ScrambleUI() {
 
+		rand = new Random();
+
 		getContentPane().setBackground(Color.BLACK);
-		scramble = null;
+		currentScramble = null;
 
 		exit = false;
 		answerLabels = new ArrayList<JLabel>();
@@ -116,7 +120,7 @@ public abstract class ScrambleUI extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				newScramble(scramble);
+				newScramble(currentScramble);
 			}
 		});
 		btnPanel.add(btnRestartScramble, gbc_btnRestartScramble);
@@ -227,7 +231,7 @@ public abstract class ScrambleUI extends JFrame {
 
 	public void newScramble(Scramble scramble) {
 		exit = false;
-		this.scramble = scramble;
+		this.currentScramble = scramble;
 		answerLabelPanel.removeAll();
 		scrambleLabelPanel.removeAll();
 		lblText.setText(scramble.getText());
@@ -297,9 +301,9 @@ public abstract class ScrambleUI extends JFrame {
 							((JLabel) e.getComponent()).setText("");
 						}
 					}
+					repaint();
 					refreshCurrentText();
 					inputCaptured();
-					repaint();
 				}
 			});
 			a.addMouseListener(new MouseListener() {
@@ -323,8 +327,6 @@ public abstract class ScrambleUI extends JFrame {
 							((JLabel) e.getComponent()).setText("");
 						}
 					}
-					refreshCurrentText();
-					inputCaptured();
 					repaint();
 				}
 			});
@@ -341,6 +343,30 @@ public abstract class ScrambleUI extends JFrame {
 		setVisible(true);
 	}
 
+	public void hint() {
+		ArrayList<Integer> unused = new ArrayList<Integer>();
+		for (JLabel l : answerLabels) {
+			if (l == null || l.getText().equals("")) {
+				unused.add(answerLabels.indexOf(l));
+			}
+		}
+		String strHint = " ";
+		int hint = -1;
+		while (strHint.equals(" ")) {
+			hint = unused.get(rand.nextInt(unused.size()));
+			strHint = String.valueOf(currentScramble.getWord().charAt(hint));
+		}
+		for (JLabel l : scrambleLabels) {
+			if (l.getText().equalsIgnoreCase(strHint)) {
+				answerLabels.get(hint).setText(strHint.toUpperCase());
+				l.setText("");
+				l.repaint();
+				answerLabels.get(hint).repaint();
+				return;
+			}
+		}
+	}
+
 	public void gameOver() {
 		synchronized (this) {
 			exit = true;
@@ -350,9 +376,9 @@ public abstract class ScrambleUI extends JFrame {
 	}
 
 	private void inputCaptured() {
-		if (scramble.getText().equals(getCurrentText())) {
+		if (currentScramble.getWord().equalsIgnoreCase(currentText)) {
 			complete();
-		} else if (scramble.getText().length() == getCurrentText().length())
+		} else if (currentScramble.getWord().length() == getCurrentText().length())
 			displayWrong();
 	}
 
@@ -431,7 +457,6 @@ public abstract class ScrambleUI extends JFrame {
 			scrambleLabels.get(i).setText(answerLabels.get(i).getText());
 			answerLabels.get(i).setText("");
 		}
-		refreshCurrentText();
 	}
 
 	private void refreshCurrentText() {

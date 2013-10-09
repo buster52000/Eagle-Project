@@ -1,6 +1,7 @@
 package com.project.puzzle;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
@@ -180,6 +181,7 @@ public class PuzzleBase {
 		UIManager.put("OptionPane.background", Color.BLACK);
 		UIManager.put("OptionPane.messageForeground", Color.WHITE);
 		UIManager.put("Panel.background", Color.BLACK);
+		UIManager.put("OptionPane.messageFont", new Font("Serif", Font.PLAIN, 30));
 		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
 	}
 

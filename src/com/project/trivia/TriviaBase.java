@@ -1,6 +1,7 @@
 package com.project.trivia;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -163,6 +164,7 @@ public class TriviaBase {
 		UIManager.put("OptionPane.background", Color.BLACK);
 		UIManager.put("OptionPane.messageForeground", Color.WHITE);
 		UIManager.put("Panel.background", Color.BLACK);
+		UIManager.put("OptionPane.messageFont", new Font("Serif", Font.PLAIN, 30));
 		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
 	}
 

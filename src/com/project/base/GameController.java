@@ -18,7 +18,7 @@ import com.project.wordScramble.WordScrambleBase;
 public class GameController implements MouseMotionListener {
 
 	public static final int ACTIVATE_SS_AfterMilliseconds = 180000;
-	public static final int END_GAME_AFTER_MILLI = 3000;//120000;
+	public static final int END_GAME_AFTER_MILLI = 120000;
 	
 	private BaseUI baseUI;
 	private FutureAction ssController;
