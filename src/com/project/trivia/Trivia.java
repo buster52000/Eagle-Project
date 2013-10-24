@@ -1,17 +1,17 @@
 package com.project.trivia;
 
-import java.awt.Image;
+import java.net.URL;
 
 public class Trivia {
 
 	private String question, description;
 	private String [] answers;
-	private Image pic;
+	private URL picUrl;
 	
-	public Trivia(Image pic, String question, String [] answers, String description) {
+	public Trivia(URL picUrl, String question, String [] answers, String description) {
 		this.question = question;
 		this.answers = answers;
-		this.pic = pic;
+		this.picUrl = picUrl;
 		this.description = description;
 	}
 	
@@ -23,8 +23,8 @@ public class Trivia {
 		return question;
 	}
 	
-	public Image getPic() {
-		return pic;
+	public URL getPicUrl() {
+		return picUrl;
 	}
 	
 	public String getDescription() {

@@ -6,24 +6,16 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -34,8 +26,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
-import com.project.base.BaseUI;
-import com.project.base.Main;
+import com.project.base.BaseUtils;
 
 @SuppressWarnings("serial")
 public abstract class ScrambleUI extends JFrame {
@@ -48,6 +39,7 @@ public abstract class ScrambleUI extends JFrame {
 	private ImageIcon ico;
 	private JButton btnRestartScramble, btnMainMenu;
 	private Scramble currentScramble;
+	private BufferedImage currentImage;
 	private Random rand;
 
 	public ScrambleUI() {
@@ -120,7 +112,7 @@ public abstract class ScrambleUI extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				newScramble(currentScramble);
+				newScramble(currentScramble, currentImage);
 			}
 		});
 		btnPanel.add(btnRestartScramble, gbc_btnRestartScramble);
@@ -229,25 +221,14 @@ public abstract class ScrambleUI extends JFrame {
 		return exit;
 	}
 
-	public void newScramble(Scramble scramble) {
+	public void newScramble(Scramble scramble, BufferedImage img) {
 		exit = false;
 		this.currentScramble = scramble;
+		this.currentImage = img;
 		answerLabelPanel.removeAll();
 		scrambleLabelPanel.removeAll();
 		lblText.setText(scramble.getText());
 		lblText.setHorizontalAlignment(SwingConstants.CENTER);
-		BufferedImage pic = (BufferedImage) scramble.getPicture();
-		int width;
-		int height;
-		if (pic.getWidth() > pic.getHeight()) {
-			width = BaseUI.PIC_WIDTH;
-			height = pic.getHeight();
-		} else {
-			width = pic.getWidth();
-			height = BaseUI.PIC_WIDTH;
-		}
-		height = (width * height) / pic.getWidth();
-		Image img = pic.getScaledInstance(width, height, Image.SCALE_SMOOTH);
 		ico = new ImageIcon(img);
 		lblPic.setIcon(ico);
 		String word = scramble.getWord().toUpperCase();
@@ -352,17 +333,19 @@ public abstract class ScrambleUI extends JFrame {
 		}
 		String strHint = " ";
 		int hint = -1;
-		while (strHint.equals(" ")) {
-			hint = unused.get(rand.nextInt(unused.size()));
-			strHint = String.valueOf(currentScramble.getWord().charAt(hint));
-		}
-		for (JLabel l : scrambleLabels) {
-			if (l.getText().equalsIgnoreCase(strHint)) {
-				answerLabels.get(hint).setText(strHint.toUpperCase());
-				l.setText("");
-				l.repaint();
-				answerLabels.get(hint).repaint();
-				return;
+		if (unused.size() > 0) {
+			while (strHint.equals(" ")) {
+				hint = unused.get(rand.nextInt(unused.size()));
+				strHint = String.valueOf(currentScramble.getWord().charAt(hint));
+			}
+			for (JLabel l : scrambleLabels) {
+				if (l.getText().equalsIgnoreCase(strHint)) {
+					answerLabels.get(hint).setText(strHint.toUpperCase());
+					l.setText("");
+					l.repaint();
+					answerLabels.get(hint).repaint();
+					return;
+				}
 			}
 		}
 	}
@@ -387,72 +370,13 @@ public abstract class ScrambleUI extends JFrame {
 	}
 
 	public void displayCorrect() {
-		lblPic.setIcon(new ImageIcon("gameFiles/pics/checkMark.png"));
-		AudioInputStream as = null;
-		Clip clip = null;
-		try {
-			as = AudioSystem.getAudioInputStream(new File("gameFiles/sounds/correct.wav"));
-			clip = AudioSystem.getClip();
-			clip.open(as);
-		} catch (UnsupportedAudioFileException e1) {
-			Main.errMsg("gameFiles/sounds/correct.wav is not supported", false);
-			Main.saveStackTrace(e1);
-		} catch (IOException e1) {
-			Main.errMsg("IOExcaption with gameFiles/sounds/correct.wav", false);
-			Main.saveStackTrace(e1);
-		} catch (LineUnavailableException e) {
-			Main.errMsg("LineUnavailableException for gameFiles/sounds/correct.wav", false);
-			Main.saveStackTrace(e);
-		}
-		if (Main.sound)
-			clip.start();
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			Main.errMsg("Thread sleep InterruptedExcaption", false);
-			Main.saveStackTrace(e);
-		}
-		clip.close();
-		try {
-			as.close();
-		} catch (IOException e) {
-			Main.saveStackTrace(e);
-		}
+		BaseUtils.displayResult(lblPic, "/gameFiles/pics/checkMark.png", "/gameFiles/sounds/correct.wav");
+		repaint();
 	}
 
 	public void displayWrong() {
-		lblPic.setIcon(new ImageIcon("gameFiles/pics/xMark.png"));
-		AudioInputStream as = null;
-		Clip clip = null;
-		try {
-			as = AudioSystem.getAudioInputStream(new File("gameFiles/sounds/wrong.wav"));
-			clip = AudioSystem.getClip();
-			clip.open(as);
-		} catch (UnsupportedAudioFileException e1) {
-			Main.errMsg("gameFiles/sounds/wrong.wav is not supported", false);
-			Main.saveStackTrace(e1);
-		} catch (IOException e1) {
-			Main.errMsg("IOExcaption with gameFiles/sounds/wrong.wav", false);
-			Main.saveStackTrace(e1);
-		} catch (LineUnavailableException e) {
-			Main.errMsg("LineUnavailableException for gameFiles/sounds/wrong.wav", false);
-			Main.saveStackTrace(e);
-		}
-		if (Main.sound)
-			clip.start();
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			Main.errMsg("Thread sleep InterruptedExcaption", false);
-			Main.saveStackTrace(e);
-		}
-		clip.close();
-		try {
-			as.close();
-		} catch (IOException e) {
-			Main.saveStackTrace(e);
-		}
-		lblPic.setIcon(ico);
+		BaseUtils.displayResult(lblPic, "/gameFiles/pics/xMark.png", "/gameFiles/sounds/wrong.wav");
+		repaint();
 		for (int i = 0; i < answerLabels.size(); i++) {
 			scrambleLabels.get(i).setText(answerLabels.get(i).getText());
 			answerLabels.get(i).setText("");

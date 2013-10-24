@@ -1,21 +1,21 @@
 package com.project.wordScramble;
 
-import java.awt.Image;
+import java.net.URL;
 
 public class Scramble {
 
 	private String word, text, description;
-	private Image pic;
+	private URL picLoc;
 	
-	public Scramble(String word, String text, Image pic, String description) {
+	public Scramble(String word, String text, URL picLoc, String description) {
 		this.word = word;
 		this.text = text;
-		this.pic = pic;
+		this.picLoc = picLoc;
 		this.description = description;
 	}
 	
-	public Image getPicture() {
-		return pic;
+	public URL getPictureUrl() {
+		return picLoc;
 	}
 	
 	public String getText() {

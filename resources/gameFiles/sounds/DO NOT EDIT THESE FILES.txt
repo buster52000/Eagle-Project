@@ -1,0 +1,3 @@
+DO NOT EDIT THESE FILES
+The files in this folder may be necessary for the program to function properly.
+If these files are tampered with it may cause instability in the program.

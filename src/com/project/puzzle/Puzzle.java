@@ -1,20 +1,20 @@
 package com.project.puzzle;
 
-import java.awt.image.BufferedImage;
+import java.net.URL;
 
 public class Puzzle {
 
-	private BufferedImage img;
+	private URL imageUrl;
 	private String description, name;
 	
-	public Puzzle(BufferedImage img, String description, String name) {
-		this.img = img;
+	public Puzzle(URL imageUrl, String description, String name) {
+		this.imageUrl = imageUrl;
 		this.description = description;
 		this.name = name;
 	}
 	
-	public BufferedImage getImage() {
-		return img;
+	public URL getImageUrl() {
+		return imageUrl;
 	}
 	
 	public String getDescription() {

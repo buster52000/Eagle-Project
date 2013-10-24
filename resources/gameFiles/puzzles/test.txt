@@ -1,0 +1,2 @@
+/gameFiles/puzzles/puzzle.txt
+/gameFiles/puzzles/puzzle.txt

@@ -1,0 +1,9 @@
+This file will show you the format of the scramble files.
+The Picture should be located in the gameFiles/pics directory so therefor the Picture Location should
+be something like "gameFiles/pics/test.jpg" do not forget to include the file extension (ie ".jpg" or ".png")
+
+Format:
+Word or words to scramble (This should NOT already be scrambled)
+Hint for the scramble
+Picture Location as described above
+Description of place or item (this must all be on a single line)

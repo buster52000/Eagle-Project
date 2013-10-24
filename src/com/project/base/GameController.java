@@ -4,15 +4,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
-import com.project.puzzle.Puzzle;
 import com.project.puzzle.PuzzleBase;
-import com.project.trivia.Trivia;
 import com.project.trivia.TriviaBase;
-import com.project.wordScramble.Scramble;
 import com.project.wordScramble.WordScrambleBase;
 
 public class GameController implements MouseMotionListener {
@@ -25,13 +21,7 @@ public class GameController implements MouseMotionListener {
 	private boolean screensaverActivated;
 	private boolean inGame;
 	private boolean noFatalErr;
-	private static ArrayList<Trivia> triviaFiles;
-	private static ArrayList<Scramble> scramble;
-	private static ArrayList<Puzzle> puzzles;
-	private static ArrayList<BufferedImage> pTemplates;
-	private static WordScrambleBase word;
-	private static PuzzleBase puzzle;
-	private static TriviaBase trivia;
+	private PuzzleBase puzzle = new PuzzleBase();
 
 	public GameController() {
 		baseUI = new BaseUI();
@@ -51,18 +41,6 @@ public class GameController implements MouseMotionListener {
 				screensaverActivated = false;
 			}
 		};
-		
-		Main.infoMsg("Begin Loading");
-		long nano = System.nanoTime();
-		triviaFiles = TriviaBase.loadTrivia();
-		scramble = WordScrambleBase.loadScrambles();
-		puzzles = PuzzleBase.loadPuzzles();
-		pTemplates = PuzzleBase.loadTemplates();
-		trivia = new TriviaBase();
-		word = new WordScrambleBase();
-		puzzle = new PuzzleBase();
-		Main.infoMsg("Loading Complete in " + (System.nanoTime() - nano)/1000000.0);
-		
 		ArrayList<JButton> buttons = baseUI.getJButtons();
 		baseUI.getJFrame().addMouseMotionListener(this);
 		buttons.get(0).addActionListener(new ActionListener() {
@@ -147,10 +125,10 @@ public class GameController implements MouseMotionListener {
 		case 1:
 			Main.infoMsg("Started new Word Scramble Game");
 			Thread game1 = new Thread() {
-				@SuppressWarnings("unchecked")
 				public void run() {
 					try {
-						word.playGame((ArrayList<Scramble>) scramble.clone());
+						WordScrambleBase word = new WordScrambleBase();
+						word.playGame();
 						inGame = false;
 						baseUI.requestFocus();
 						Main.infoMsg("Word Scramble Game Completed");
@@ -165,10 +143,10 @@ public class GameController implements MouseMotionListener {
 		case 2:
 			Main.infoMsg("Started new Trivia Game");
 			Thread game2 = new Thread() {
-				@SuppressWarnings("unchecked")
 				public void run() {
 					try {
-						trivia.playGame((ArrayList<Trivia>) GameController.triviaFiles.clone());
+						TriviaBase trivia = new TriviaBase();
+						trivia.playGame();
 						inGame = false;
 						baseUI.requestFocus();
 						Main.infoMsg("Trivia Game Completed");
@@ -183,13 +161,13 @@ public class GameController implements MouseMotionListener {
 		case 3:
 			Main.infoMsg("Started new Puzzle Game");
 			Thread game3 = new Thread() {
-				@SuppressWarnings("unchecked")
 				public void run() {
 					try {
-						puzzle.playGame((ArrayList<BufferedImage>) pTemplates.clone(), (ArrayList<Puzzle>) puzzles.clone());
+						puzzle.playGame();
 						inGame = false;
 						baseUI.requestFocus();
 						Main.infoMsg("Puzzle Game Completed");
+						puzzle.reset();
 						ssController.startOrRestartCountdown(ACTIVATE_SS_AfterMilliseconds);
 					} catch (Throwable e) {
 						Main.saveStackTrace(e);

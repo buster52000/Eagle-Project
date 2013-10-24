@@ -1,0 +1,14 @@
+This file will show you the format of the trivia files.
+The Picture should be located in the gameFiles/pics directory so therefor the Picture Location should
+be something like "gameFiles/pics/test.jpg" do not forget to include the file extension (ie ".jpg" or ".png")
+Wrong Answer 1 - Wrong Answer 3 should be in the order of least likely to most likely answer.
+For example if the question was Who was the first president of the United States? Wrong Answer 1 might be George Bush while Wrong Answer 3 might be Thomas Jefferson
+
+Format:
+Question
+Picture Location
+Wrong Answer 1
+Wrong Answer 2
+Wrong Answer 3
+Correct Answer
+Description of place or item (this must all be on a single line)

@@ -1,43 +1,46 @@
 package com.project.trivia;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 
+import com.project.base.BaseUI;
+import com.project.base.BaseUtils;
 import com.project.base.FutureAction;
 import com.project.base.GameController;
 import com.project.base.Main;
 
 public class TriviaBase {
 
-	private ArrayList<Trivia> trivia = new ArrayList<Trivia>();
+	private List<Trivia> trivia;
 	private Trivia currentTrivia;
+	private BufferedImage currentImage;
 	private boolean triviaLoaded;
 	private TriviaUI ui;
 	private Timer timer;
 	private FutureAction endGameTimer;
 
 	public TriviaBase() {
+		trivia = loadTrivia("/gameFiles/trivia/list.txt");
 		currentTrivia = null;
+		currentImage = null;
 		triviaLoaded = false;
 		ui = new TriviaUI();
 		timer = new Timer();
@@ -80,10 +83,13 @@ public class TriviaBase {
 							timer.cancel();
 							ui.displayCorrect();
 							triviaLoaded = false;
-							ImageIcon ico = new ImageIcon();
-							ico.setImage(currentTrivia.getPic());
-							showDescriptionDialog(currentTrivia.getDescription(), ico, currentTrivia.getAnswers()[3]);
-							nextTrivia();
+							SwingUtilities.invokeLater(new Runnable() {
+								@Override
+								public void run() {
+									BaseUtils.showDescriptionDialog(currentTrivia.getDescription(), currentImage, currentTrivia.getAnswers()[3]);
+									nextTrivia();
+								}
+							});
 						} else {
 							ui.displayWrong();
 						}
@@ -104,13 +110,13 @@ public class TriviaBase {
 				timer.cancel();
 				triviaLoaded = false;
 				currentTrivia = null;
+				currentImage = null;
 				ui.gameOver();
 			}
 		});
 	}
 
-	public void playGame(ArrayList<Trivia> trivia) {
-		this.trivia = trivia;
+	public void playGame() {
 		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 		nextTrivia();
 		synchronized (ui) {
@@ -125,49 +131,6 @@ public class TriviaBase {
 		endGameTimer.cancel();
 	}
 
-	private void showDescriptionDialog(String str, ImageIcon ico, String title) {
-		if (ico.getIconHeight() > 500 || ico.getIconWidth() > 500) {
-			int h = 1;
-			int w = 1;
-			if (ico.getIconHeight() < ico.getIconWidth()) {
-				h = 500;
-				w = (h * ico.getIconWidth()) / ico.getIconWidth();
-			} else {
-				w = 500;
-				h = (w * ico.getIconHeight()) / ico.getIconWidth();
-			}
-			if (h == 1 || w == 1) {
-				Main.errMsg("Unable to resize image - com.project.trivia.TriviaBase.showDescriptionDialog()", false);
-			} else {
-				Image img = ico.getImage().getScaledInstance(h, w, Image.SCALE_FAST);
-				ico = new ImageIcon(img);
-			}
-		}
-		ArrayList<String> descriptionLines = new ArrayList<String>();
-		int currentCharNum = 0;
-		int lastCharNum = 0;
-		while (currentCharNum < str.length()) {
-			lastCharNum = currentCharNum;
-			currentCharNum += 90;
-			if (currentCharNum > str.length()) {
-				descriptionLines.add(str.substring(lastCharNum));
-			} else {
-				while (str.charAt(currentCharNum) != ' ')
-					currentCharNum -= 1;
-				descriptionLines.add(str.substring(lastCharNum, currentCharNum));
-			}
-		}
-		String formatted = " ";
-		for (int i = 0; i < descriptionLines.size(); i++) {
-			formatted += descriptionLines.get(i) + (i + 1 != descriptionLines.size() ? "\n" : "");
-		}
-		UIManager.put("OptionPane.background", Color.BLACK);
-		UIManager.put("OptionPane.messageForeground", Color.WHITE);
-		UIManager.put("Panel.background", Color.BLACK);
-		UIManager.put("OptionPane.messageFont", new Font("Serif", Font.PLAIN, 30));
-		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
-	}
-
 	private void nextTrivia() {
 		timer.cancel();
 		timer = new Timer();
@@ -179,9 +142,10 @@ public class TriviaBase {
 				Random rand = new Random();
 				int i = rand.nextInt(trivia.size());
 				currentTrivia = trivia.get(i);
+				currentImage = BaseUtils.loadImage(currentTrivia.getPicUrl(), BaseUI.PIC_WIDTH);
 				trivia.remove(i);
 				triviaLoaded = true;
-				ui.nextTrivia(currentTrivia);
+				ui.nextTrivia(currentTrivia, currentImage);
 				timer.schedule(new TimerTask() {
 
 					@Override
@@ -208,7 +172,7 @@ public class TriviaBase {
 					@Override
 					public void run() {
 						triviaLoaded = false;
-						showDescriptionDialog(currentTrivia.getDescription(), new ImageIcon(currentTrivia.getPic()), currentTrivia.getAnswers()[3]);
+						BaseUtils.showDescriptionDialog(currentTrivia.getDescription(), currentImage, currentTrivia.getAnswers()[3]);
 						nextTrivia();
 					}
 				}, 50000);
@@ -224,41 +188,129 @@ public class TriviaBase {
 		}
 	}
 
-	public static ArrayList<Trivia> loadTrivia() {
-		File dir = new File("gameFiles/trivia/");
-		ArrayList<Trivia> triv = new ArrayList<Trivia>();
-		if (dir.exists()) {
-			File[] files = dir.listFiles();
-			for (File f : files) {
-				String question = "";
-				String picLoc = "";
-				String description = "";
-				String[] answers = new String[4];
-				Image img = null;
-				try {
-					BufferedReader read = new BufferedReader(new FileReader(f));
-					question = read.readLine();
-					picLoc = read.readLine();
-					answers[0] = read.readLine();
-					answers[1] = read.readLine();
-					answers[2] = read.readLine();
-					answers[3] = read.readLine();
-					description = read.readLine();
-					read.close();
-					img = ImageIO.read(new File(picLoc));
-				} catch (FileNotFoundException e) {
-					Main.errMsg("Unable to load trivia file not found", false);
-					Main.saveStackTrace(e);
-				} catch (IOException e) {
-					Main.errMsg("File with improper format found when loading trivia files", false);
-					Main.saveStackTrace(e);
-				}
-				triv.add(new Trivia(img, question, answers, description));
-			}
-		} else {
-			dir.mkdirs();
+	public static List<Trivia> loadTrivia(String triviaListResource) {
+		List<Trivia> trivia = new ArrayList<Trivia>();
+		
+		// load any that are part of the resources
+		InputStream triviaList = TriviaBase.class.getResourceAsStream(triviaListResource);
+		if (triviaList == null) {
+			Main.errMsg("Couldn't open the trivia list as a resource", false);
+			return trivia; // even though it's empty!
 		}
-		return triv;
+		
+		BufferedReader breader = new BufferedReader(new InputStreamReader(triviaList));
+		String line;
+		try {
+			while ((line = breader.readLine()) != null) {
+				String triviaName = line;
+				boolean stat = loadTriviaDescriptor(trivia, TriviaBase.class.getResourceAsStream(triviaName));
+				if (!stat) {
+					Main.errMsg("Failed to load trivia descriptor: "+triviaName, false);
+				}
+			}
+		} catch (IOException e) {
+			// report problem, but continue 
+			Main.errMsg("Error while loading the trivia list.  The set of available trivia may not be complete", false);
+		} finally {
+			try {
+				breader.close();
+				triviaList.close();
+			} catch (IOException e) {
+				// not going to worry about this case
+			}
+		}
+
+		// load any extras at user.home
+		File dir = new File(System.getProperty("user.home")+System.getProperty("file.separator")+"gameFiles/trivia/");
+		if (!dir.exists()) {
+			dir.mkdirs();
+			return trivia;
+		}
+		File[] files = dir.listFiles();
+		for (File f : files) {
+			boolean stat = loadTriviaDescriptor(trivia, f);
+			if (!stat) {
+				Main.errMsg("Failed to load trivia descriptor: "+f.getAbsolutePath(), false);
+			}
+		}
+		
+		return trivia;
+	}
+
+	private static boolean loadTriviaDescriptor(List<Trivia> trivia, InputStream triviaMetadataStream) {
+		BufferedReader read = null;
+		try {
+			read = new BufferedReader(new InputStreamReader(triviaMetadataStream));
+			String question = read.readLine();
+			String picLoc = read.readLine();
+			String[] answers = new String[4];
+			answers[0] = read.readLine();
+			answers[1] = read.readLine();
+			answers[2] = read.readLine();
+			answers[3] = read.readLine();
+			String description = read.readLine();
+			URL url = TriviaBase.class.getResource(picLoc);
+			Main.infoMsg("Registering trivia: "+picLoc);
+			trivia.add(new Trivia(url, question, answers, description));
+			return true;
+		} catch (FileNotFoundException e) {
+			Main.errMsg("File named in trivia list not found", false);
+			Main.saveStackTrace(e);
+			return false;
+		} catch (IOException e) {
+			Main.errMsg("IOException unable to read trivia descriptor file", false);
+			Main.saveStackTrace(e);
+			return false;
+		} finally {
+			try {
+				if (read != null)
+					read.close();
+			} catch (IOException e) {
+				// not much to do in this case, but probably doesn't matter either
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private static boolean loadTriviaDescriptor(List<Trivia> trivia, File f) {
+		BufferedReader read = null;
+		try {
+			read = new BufferedReader(new FileReader(f));
+			String question = read.readLine();
+			String picLoc = read.readLine();
+			String[] answers = new String[4];
+			answers[0] = read.readLine();
+			answers[1] = read.readLine();
+			answers[2] = read.readLine();
+			answers[3] = read.readLine();
+			String description = read.readLine();
+			
+			File f2 = new File(picLoc);
+			if (f2.exists()) {
+				Main.infoMsg("Registering trivia: "+f2.getAbsolutePath());
+				trivia.add(new Trivia(f2.toURI().toURL(), question, answers, description));
+				return true;
+			} else {
+				Main.errMsg("Trivia File not found: "+f2.getAbsolutePath(), false);
+				return false;
+			}
+		} catch (FileNotFoundException e) {
+			Main.errMsg("Unable to load trivia file not found", false);
+			Main.saveStackTrace(e);
+			return false;
+		} catch (IOException e) {
+			Main.errMsg("File with improper format found when loading trivia files", false);
+			Main.saveStackTrace(e);
+			return false;
+		} finally {
+			try {
+				if (read != null)
+					read.close();
+			} catch (IOException e) {
+				// not much to do in this case, but probably doesn't matter either
+				e.printStackTrace();
+			}
+		}
 	}
 
 }

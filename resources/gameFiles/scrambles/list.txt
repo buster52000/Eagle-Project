@@ -1,0 +1,7 @@
+/gameFiles/scrambles/abacus.txt
+/gameFiles/scrambles/bedwarmer.txt
+/gameFiles/scrambles/dowsingrod.txt
+/gameFiles/scrambles/draftbox.txt
+/gameFiles/scrambles/fraktur.txt
+/gameFiles/scrambles/martinguitar.txt
+/gameFiles/scrambles/mechanicalbank.txt

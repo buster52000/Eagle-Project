@@ -5,6 +5,8 @@ import java.awt.Image;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.swing.JPanel;
 
@@ -13,13 +15,13 @@ public class PicturePanel extends JPanel {
 
 	private Image img;
 	private int pMouseX, pMouseY;
-	private ArrayList<PicturePanel> neighbors;
+	private Set<PicturePanel> neighbors;
 	private Point center;
 
 	public PicturePanel(BufferedImage image) {
 		center = new Point(0, 0);
 		img = image;
-		neighbors = new ArrayList<PicturePanel>();
+		neighbors = new HashSet<PicturePanel>();
 		setOpaque(false);
 	}
 
@@ -72,7 +74,7 @@ public class PicturePanel extends JPanel {
 		return neighbors.contains(p);
 	}
 	
-	public ArrayList<PicturePanel> getExtendedNeighbors(ArrayList<PicturePanel> extended) {
+	public Set<PicturePanel> getExtendedNeighbors(Set<PicturePanel> extended) {
 		if(extended.contains(this)) {
 			return extended;
 		}

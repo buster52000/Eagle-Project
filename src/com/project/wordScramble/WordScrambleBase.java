@@ -1,25 +1,26 @@
 package com.project.wordScramble;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Image;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JOptionPane;
-import javax.swing.UIManager;
+import javax.swing.SwingUtilities;
 
+import com.project.base.BaseUI;
+import com.project.base.BaseUtils;
 import com.project.base.FutureAction;
 import com.project.base.GameController;
 import com.project.base.Main;
@@ -27,25 +28,32 @@ import com.project.base.Main;
 public class WordScrambleBase {
 
 	private ScrambleUI ui;
-	private ArrayList<Scramble> scrambles;
+	private List<Scramble> scrambles;
 	private FutureAction endGameTimer, hintTimer;
 	private Random rand;
 	private Scramble currentScramble;
+	private BufferedImage currentImage;
 	private boolean scrambleLoaded;
 	
 	private static final int HINT_WAIT_TIME = 5000;
 
 	@SuppressWarnings("serial")
 	public WordScrambleBase() {
-		scrambles = new ArrayList<Scramble>();
+		scrambles = loadScrambles("/gameFiles/scrambles/list.txt");
 		ui = new ScrambleUI() {
 
 			@Override
 			public void complete() {
 				scrambleLoaded = false;
 				ui.displayCorrect();
-				showDescriptionDialog(currentScramble.getDescription(), new ImageIcon(currentScramble.getPicture()), currentScramble.getWord());
-				nextScramble();
+				
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						BaseUtils.showDescriptionDialog(currentScramble.getDescription(), currentImage, currentScramble.getWord());
+						nextScramble();
+					}
+				});
 			}
 
 		};
@@ -94,6 +102,7 @@ public class WordScrambleBase {
 		
 		rand = new Random();
 		currentScramble = null;
+		currentImage = null;
 
 		endGameTimer = new FutureAction() {
 
@@ -124,8 +133,7 @@ public class WordScrambleBase {
 
 	}
 
-	public void playGame(ArrayList<Scramble> scrambles) {
-		this.scrambles = scrambles;
+	public void playGame() {
 		scrambleLoaded = false;
 		nextScramble();
 		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
@@ -146,150 +154,143 @@ public class WordScrambleBase {
 	private void nextScramble() {
 		if (scrambles.size() > 0) {
 			if (scrambleLoaded)
-				Main.errMsg("Scramble already loaded proceding anyway", false);
+				Main.errMsg("Scramble already loaded proceeding anyway", false);
 			int i = rand.nextInt(scrambles.size());
 			currentScramble = scrambles.get(i);
+			currentImage = BaseUtils.loadImage(currentScramble.getPictureUrl(), BaseUI.PIC_WIDTH);
 			scrambleLoaded = true;
 			scrambles.remove(i);
-			ui.newScramble(currentScramble);
+			ui.newScramble(currentScramble, currentImage);
 		} else {
 			ui.gameOver();
 		}
 	}
 
-	// public void playGame(ArrayList<Scramble> scrambles) {
-	// this.scrambles = scrambles;
-	// exit = false;
-	// endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
-	// boolean scrambleLoaded = false;
-	// Scramble currentScramble = null;
-	// ArrayList<Scramble> unusedScrambles = scrambles;
-	// Random rand = new Random();
-	// while (!exit) {
-	// if (scrambleLoaded && currentScramble != null) {
-	// ui.newScramble(currentScramble);
-	// while (scrambleLoaded) {
-	// if (ui.inputWasCaptured()) {
-	// if (ui.getCurrentText().equalsIgnoreCase(currentScramble.getWord())) {
-	// scrambleLoaded = false;
-	// ui.displayCorrect();
-	// ImageIcon ico = new ImageIcon();
-	// ico.setImage(currentScramble.getPicture());
-	// showDescriptionDialog(currentScramble.getDescription(), ico,
-	// currentScramble.getWord());
-	// } else if (ui.getCurrentText().length() ==
-	// currentScramble.getWord().length())
-	// ui.displayWrong();
-	// } else if (ui.exit()) {
-	// scrambleLoaded = false;
-	// exit = true;
-	// }
-	// try {
-	// Thread.sleep(125);
-	// } catch (InterruptedException e) {
-	// Main.saveStackTrace(e);
-	// }
-	// }
-	// currentScramble = null;
-	// } else if (scrambleLoaded && currentScramble == null) {
-	// Main.errMsg("Word Scramble thinks Scramble is loaded but currentScramble is null",
-	// false);
-	// throw new NullPointerException("currentScramble is null");
-	// } else if (unusedScrambles.size() != 0) {
-	// int i = rand.nextInt(unusedScrambles.size());
-	// currentScramble = unusedScrambles.get(i);
-	// unusedScrambles.remove(i);
-	// scrambleLoaded = true;
-	// ui.newScramble(currentScramble);
-	// } else {
-	// exit = true;
-	// }
-	// }
-	// ui.gameOver();
-	// }
+	public static List<Scramble> loadScrambles(String scrambleListResource) {
+		List<Scramble> scrambles = new ArrayList<Scramble>();
+		
+		// load any that are part of the resources
+		InputStream scrambleList = WordScrambleBase.class.getResourceAsStream(scrambleListResource);
+		if (scrambleList == null) {
+			Main.errMsg("Couldn't open the scramble list as a resource", false);
+			return scrambles; // even though it's empty!
+		}
+		BufferedReader breader = new BufferedReader(new InputStreamReader(scrambleList));
+		String line;
+		try {
+			while ((line = breader.readLine()) != null) {
+				String scrambleName = line;
+				boolean stat = loadScrambleDescriptor(scrambles, WordScrambleBase.class.getResourceAsStream(scrambleName));
+				if (!stat) {
+					Main.errMsg("Failed to load scramble descriptor: "+scrambleName, false);
+				}
+			}
+		} catch (IOException e) {
+			// report problem, but continue 
+			Main.errMsg("Error while loading the scramble list.  The set of available scrambles may not be complete", false);
+		} finally {
+			try {
+				breader.close();
+				scrambleList.close();
+			} catch (IOException e) {
+				// not going to worry about this case
+			}
+		}
 
-	public void showDescriptionDialog(String str, ImageIcon ico, String title) {
-		if (ico.getIconHeight() > 500 || ico.getIconWidth() > 500) {
-			int h = 1;
-			int w = 1;
-			if (ico.getIconHeight() < ico.getIconWidth()) {
-				h = 500;
-				w = (h * ico.getIconWidth()) / ico.getIconWidth();
-			} else {
-				w = 500;
-				h = (w * ico.getIconHeight()) / ico.getIconWidth();
-			}
-			if (h == 1 || w == 1) {
-				Main.errMsg("Unable to resize image - com.project.trivia.WordScrambleBase.showDescriptionDialog()", false);
-			} else {
-				Image img = ico.getImage().getScaledInstance(h, w, Image.SCALE_FAST);
-				ico = new ImageIcon(img);
-			}
-		}
-		ArrayList<String> descriptionLines = new ArrayList<String>();
-		int currentCharNum = 0;
-		int lastCharNum = 0;
-		while (currentCharNum < str.length()) {
-			lastCharNum = currentCharNum;
-			currentCharNum += 90;
-			if (currentCharNum > str.length()) {
-				descriptionLines.add(str.substring(lastCharNum));
-			} else {
-				while (str.charAt(currentCharNum) != ' ')
-					currentCharNum -= 1;
-				descriptionLines.add(str.substring(lastCharNum, currentCharNum));
-			}
-		}
-		String formatted = " ";
-		for (int i = 0; i < descriptionLines.size(); i++) {
-			formatted += descriptionLines.get(i) + (i + 1 != descriptionLines.size() ? "\n" : "");
-		}
-		UIManager.put("OptionPane.background", Color.BLACK);
-		UIManager.put("OptionPane.messageForeground", Color.WHITE);
-		UIManager.put("Panel.background", Color.BLACK);
-		UIManager.put("OptionPane.messageFont", new Font("Serif", Font.PLAIN, 30));
-		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
-	}
-
-	public static ArrayList<Scramble> loadScrambles() {
-		ArrayList<Scramble> scrambles = new ArrayList<Scramble>();
-		File dir = new File("gameFiles/scrambles/");
-		if (!dir.isDirectory())
+		// load any extras at user.home
+		File dir = new File(System.getProperty("user.home")+System.getProperty("file.separator")+"gameFiles/scrambles/");
+		if (!dir.exists()) {
 			dir.mkdirs();
+			return scrambles;
+		}
 		File[] files = dir.listFiles();
 		for (File f : files) {
-			String word = "";
-			String text = "";
-			String picLoc = "";
-			String description = "";
-			try {
-				BufferedReader read = new BufferedReader(new FileReader(f));
-				word = read.readLine();
-				text = read.readLine();
-				picLoc = read.readLine();
-				description = read.readLine();
-				read.close();
-			} catch (FileNotFoundException e) {
-				Main.errMsg("File not found after getting list of files - file: " + f.getName() + " (project.wordScramble.WordScrambleBase.loadScrambles())", true);
-				Main.saveStackTrace(e);
-			} catch (IOException e) {
-				Main.errMsg("IOException unable to read file: " + f.getName() + " (project.wordScramble.WordScrambleBase.loadScrambles())", true);
-				Main.saveStackTrace(e);
-			}
-
-			if (word.equals("") || text.equals("") || picLoc.equals("") || description.equals(""))
-				Main.errMsg("Scramble File not read properly - file: " + f.getName(), true);
-			else {
-				Image pic = null;
-				try {
-					pic = ImageIO.read(new File(picLoc));
-				} catch (IOException e) {
-					Main.saveStackTrace(e);
-				}
-				scrambles.add(new Scramble(word, text, pic, description));
+			boolean stat = loadScrambleDescriptor(scrambles, f);
+			if (!stat) {
+				Main.errMsg("Failed to load scramble descriptor: "+f.getAbsolutePath(), false);
 			}
 		}
+		
 		return scrambles;
+	}
+
+	private static boolean loadScrambleDescriptor(List<Scramble> scrambles, InputStream scrambleMetadataStream) {
+		BufferedReader read = null;
+		try {
+			read = new BufferedReader(new InputStreamReader(scrambleMetadataStream));
+			String word = read.readLine();
+			String text = read.readLine();
+			String picLoc = read.readLine();
+			String description = read.readLine();
+			
+			if (word.equals("") || text.equals("") || picLoc.equals("") || description.equals("")) {
+				Main.errMsg("Scramble File not read properly", false);
+				return false;
+			} else {
+				URL url = WordScrambleBase.class.getResource(picLoc);
+				Main.infoMsg("Registering scramble: "+picLoc);
+				scrambles.add(new Scramble(word, text, url, description));
+				return true;
+			}
+		} catch (FileNotFoundException e) {
+			Main.errMsg("File named in scramble file list not found", false);
+			Main.saveStackTrace(e);
+			return false;
+		} catch (IOException e) {
+			Main.errMsg("IOException unable to read scramble descriptor file", false);
+			Main.saveStackTrace(e);
+			return false;
+		} finally {
+			try {
+				if (read != null)
+					read.close();
+			} catch (IOException e) {
+				// not much to do in this case, but probably doesn't matter either
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private static boolean loadScrambleDescriptor(List<Scramble> scrambles, File f) {
+		BufferedReader read = null;
+		try {
+			read = new BufferedReader(new FileReader(f));
+			String word = read.readLine();
+			String text = read.readLine();
+			String picLoc = read.readLine();
+			String description = read.readLine();
+			
+			if (word.equals("") || text.equals("") || picLoc.equals("") || description.equals("")) {
+				Main.errMsg("Scramble File not read properly", false);
+				return false;
+			} else {
+				File f2 = new File(picLoc);
+				if (f2.exists()) {
+					Main.infoMsg("Registering scramble: "+f2.getAbsolutePath());
+					scrambles.add(new Scramble(word, text, f2.toURI().toURL(), description));
+					return true;
+				} else {
+					Main.errMsg("Scramble File not found: "+f2.getAbsolutePath(), false);
+					return false;
+				}
+			}
+		} catch (FileNotFoundException e) {
+			Main.errMsg("File named in scramble file list not found", false);
+			Main.saveStackTrace(e);
+			return false;
+		} catch (IOException e) {
+			Main.errMsg("IOException unable to read scramble descriptor file", false);
+			Main.saveStackTrace(e);
+			return false;
+		} finally {
+			try {
+				if (read != null)
+					read.close();
+			} catch (IOException e) {
+				// not much to do in this case, but probably doesn't matter either
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public static String scrambleWord(String word) {

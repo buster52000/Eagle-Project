@@ -1,10 +1,5 @@
 package com.project.trivia;
 
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
@@ -14,14 +9,11 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
-import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
@@ -31,9 +23,8 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JRadioButton;
 import javax.swing.JButton;
-import javax.swing.SwingUtilities;
 
-import com.project.base.BaseUI;
+import com.project.base.BaseUtils;
 import com.project.base.Main;
 
 @SuppressWarnings("serial")
@@ -344,7 +335,7 @@ public class TriviaUI extends JFrame implements ActionListener {
 		return btnMainMenu;
 	}
 
-	public void nextTrivia(Trivia trivia) {
+	public void nextTrivia(Trivia trivia, BufferedImage image) {
 		exit = false;
 		numHidden = 0;
 		currentTrivia = trivia;
@@ -372,12 +363,7 @@ public class TriviaUI extends JFrame implements ActionListener {
 		rdbtnB.setEnabled(true);
 		rdbtnC.setEnabled(true);
 		rdbtnD.setEnabled(true);
-		BufferedImage pic = (BufferedImage) trivia.getPic();
-		int width = BaseUI.PIC_WIDTH;
-		int height = pic.getHeight();
-		height = (width * height) / pic.getWidth();
-		Image img = pic.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-		ico = new ImageIcon(img);
+		ico = new ImageIcon(image);
 		lblPic.setIcon(ico);
 		repaint();
 		setVisible(true);
@@ -441,87 +427,15 @@ public class TriviaUI extends JFrame implements ActionListener {
 	}
 
 	public void displayCorrect() {
-		lblPic.setIcon(new ImageIcon("gameFiles/pics/checkMark.png"));
+		BaseUtils.displayResult(lblPic, "/gameFiles/pics/checkMark.png", "/gameFiles/sounds/correct.wav");
 		group.clearSelection();
 		repaint();
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				AudioInputStream as = null;
-				Clip clip = null;
-				try {
-					as = AudioSystem.getAudioInputStream(new File("gameFiles/sounds/correct.wav"));
-					clip = AudioSystem.getClip();
-					clip.open(as);
-				} catch (UnsupportedAudioFileException e1) {
-					Main.errMsg("gameFiles/sounds/correct.wav is not supported", false);
-					Main.saveStackTrace(e1);
-				} catch (IOException e1) {
-					Main.errMsg("IOExcaption with gameFiles/sounds/correct.wav", false);
-					Main.saveStackTrace(e1);
-				} catch (LineUnavailableException e) {
-					Main.errMsg("LineUnavailableException for gameFiles/sounds/correct.wav", false);
-					Main.saveStackTrace(e);
-				}
-				if (Main.sound)
-					clip.start();
-				try {
-					Thread.sleep(2000);
-				} catch (InterruptedException e) {
-					Main.errMsg("Thread sleep InterruptedExcaption", false);
-					Main.saveStackTrace(e);
-				}
-				clip.close();
-				try {
-					as.close();
-				} catch (IOException e) {
-					Main.saveStackTrace(e);
-				}
-			}
-		});
 	}
 
 	public void displayWrong() {
-		lblPic.setIcon(new ImageIcon("gameFiles/pics/xMark.png"));
+		BaseUtils.displayResult(lblPic, "/gameFiles/pics/xMark.png", "/gameFiles/sounds/wrong.wav");
 		group.clearSelection();
 		repaint();
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				Clip clip = null;
-				AudioInputStream as = null;
-				try {
-					as = AudioSystem.getAudioInputStream(new File("gameFiles/sounds/wrong.wav"));
-					clip = AudioSystem.getClip();
-					clip.open(as);
-				} catch (UnsupportedAudioFileException e1) {
-					Main.errMsg("gameFiles/sounds/wrong.wav is not supported", false);
-					Main.saveStackTrace(e1);
-				} catch (IOException e1) {
-					Main.errMsg("IOExcaption with gameFiles/sounds/wrong.wav", false);
-					Main.saveStackTrace(e1);
-				} catch (LineUnavailableException e) {
-					Main.errMsg("LineUnavailableException for gameFiles/sounds/wrong.wav", false);
-					Main.saveStackTrace(e);
-				}
-				if (Main.sound)
-					clip.start();
-				try {
-					Thread.sleep(2000);
-				} catch (InterruptedException e) {
-					Main.errMsg("Thread sleep InterruptedExcaption", false);
-					Main.saveStackTrace(e);
-				}
-				clip.close();
-				try {
-					as.close();
-				} catch (IOException e) {
-					Main.saveStackTrace(e);
-				}
-				lblPic.setIcon(ico);
-				repaint();
-			}
-		});
 	}
 
 	public JButton getSubmitButton() {

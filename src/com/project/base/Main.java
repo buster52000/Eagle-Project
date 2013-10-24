@@ -13,21 +13,17 @@ import com.google.common.base.Throwables;
 public class Main {
 
 	private static File logFile;
-	public static boolean sound;
+	public static boolean test = false;
+	public static boolean soundEffects = true;
+	public static boolean music = true;
 
-	public static void main(String[] args) {
-		try {
-			if (args.length < 1 || !"-s".equals(args[0])) {
-				System.out.println("Sound on disable sound with -s 0");
-				sound = false;
-			} else {
-				if (args[1].equals("0")) {
-					Main.infoMsg("Sound Disabled remove the argument -s 0 to turn on sound");
-					sound = false;
-				} else
-					sound = true;
-			}
-			logFile = new File("game.log");
+	private static File getLogFile() {
+		if (logFile == null) {
+			File logdir = new File(System.getProperty("user.home") + "/logs");
+			if (!logdir.exists())
+				logdir.mkdirs();
+			
+			logFile = new File(logdir+"/game.log");
 			try {
 				if (!logFile.exists()) {
 					logFile.createNewFile();
@@ -35,6 +31,23 @@ public class Main {
 			} catch (IOException e) {
 				Main.saveStackTrace(e);
 			}
+		}
+		return logFile;
+	}
+	
+	public static void main(String[] args) {
+		try {
+			if (!test) {
+				String testIndicator = System.getProperty("user.home")+"/enableGameTests";
+				test = new File(testIndicator).exists();
+			}
+			
+			if (test) {
+				soundEffects = false;
+				music = false;
+			}
+			
+			getLogFile(); // makes sure it's initialized
 			infoMsg("Program Started");
 			GameController cont = new GameController();
 			if (cont.start()) {
@@ -60,8 +73,7 @@ public class Main {
 	}
 
 	public static void errMsg(String msg, boolean fatal) {
-		if (logFile == null)
-			logFile = new File("game.log");
+		File logFile = getLogFile(); // gets and makes sure it's initialized
 		int date[] = getDate();
 		String dates[] = new String[3];
 		for (int i = 0; i < 3; i++)
@@ -84,8 +96,7 @@ public class Main {
 	}
 
 	public static void infoMsg(String msg) {
-		if (logFile == null)
-			logFile = new File("game.log");
+		File logFile = getLogFile(); // gets and makes sure it's initialized
 		int date[] = getDate();
 		String dates[] = new String[3];
 		for (int i = 0; i < 3; i++)

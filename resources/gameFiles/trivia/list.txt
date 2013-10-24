@@ -1,0 +1,9 @@
+/gameFiles/trivia/beaverpelt.txt
+/gameFiles/trivia/bixler.txt
+/gameFiles/trivia/civilwardrums.txt
+/gameFiles/trivia/hairwreath.txt
+/gameFiles/trivia/justborn.txt
+/gameFiles/trivia/lenapetools.txt
+/gameFiles/trivia/pumpertruck.txt
+/gameFiles/trivia/test.txt
+/gameFiles/trivia/wwiiposters.txt
