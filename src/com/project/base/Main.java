@@ -121,5 +121,4 @@ public class Main {
 		date[5] = cal.get(Calendar.DAY_OF_MONTH);
 		return date;
 	}
-
 }

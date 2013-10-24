@@ -60,6 +60,7 @@ public class TriviaUI extends JFrame implements ActionListener {
 		currentTrivia = null;
 
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setBounds(100, 100, 450, 300);
 		contentPane = new JPanel();
 		contentPane.setBackground(Color.BLACK);
@@ -67,15 +68,16 @@ public class TriviaUI extends JFrame implements ActionListener {
 		setContentPane(contentPane);
 		GridBagLayout gbl_contentPane = new GridBagLayout();
 		gbl_contentPane.columnWidths = new int[] { 0, 0, 0 };
-		gbl_contentPane.rowHeights = new int[] { 0, 0, 0 };
+		gbl_contentPane.rowHeights = new int[] { 0, 0, 0, 0 };
 		gbl_contentPane.columnWeights = new double[] { 1.0, 1.0, Double.MIN_VALUE };
-		gbl_contentPane.rowWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
+		gbl_contentPane.rowWeights = new double[] { 0.0, 0.0, 1.0, Double.MIN_VALUE };
 		contentPane.setLayout(gbl_contentPane);
 
 		btnMainMenu = new JButton("Main Menu");
 		btnMainMenu.setMinimumSize(new Dimension(83, 22));
 		btnMainMenu.setMaximumSize(new Dimension(83, 22));
 		GridBagConstraints gbc_btnMainMenu = new GridBagConstraints();
+		gbc_btnMainMenu.insets = new Insets(0, 0, 5, 5);
 		gbc_btnMainMenu.anchor = GridBagConstraints.WEST;
 		gbc_btnMainMenu.gridx = 0;
 		gbc_btnMainMenu.gridy = 0;
@@ -85,7 +87,7 @@ public class TriviaUI extends JFrame implements ActionListener {
 		topPanel = new JPanel();
 		GridBagConstraints gbc_topPanel = new GridBagConstraints();
 		gbc_topPanel.gridwidth = 2;
-		gbc_topPanel.insets = new Insets(0, 0, 5, 5);
+		gbc_topPanel.insets = new Insets(0, 0, 5, 0);
 		gbc_topPanel.anchor = GridBagConstraints.NORTH;
 		gbc_topPanel.fill = GridBagConstraints.HORIZONTAL;
 		gbc_topPanel.gridx = 0;
@@ -94,13 +96,27 @@ public class TriviaUI extends JFrame implements ActionListener {
 
 		lblSigalMuseum = new JLabel("Sigal Museum");
 		topPanel.add(lblSigalMuseum);
+		
+				questPanel = new JPanel();
+				GridBagConstraints gbc_questPanel = new GridBagConstraints();
+				gbc_questPanel.gridwidth = 2;
+				gbc_questPanel.insets = new Insets(0, 0, 5, 5);
+				gbc_questPanel.gridx = 0;
+				gbc_questPanel.gridy = 1;
+				contentPane.add(questPanel, gbc_questPanel);
+				
+						lblQuest = new JLabel("");
+						questPanel.add(lblQuest);
+						lblQuest.setForeground(Color.WHITE);
+						lblQuest.setFont(new Font("Serif", Font.PLAIN, 36));
+						questPanel.setOpaque(false);
 
 		leftPanel = new JPanel();
 		GridBagConstraints gbc_leftPanel = new GridBagConstraints();
 		gbc_leftPanel.insets = new Insets(0, 0, 0, 5);
 		gbc_leftPanel.fill = GridBagConstraints.BOTH;
 		gbc_leftPanel.gridx = 0;
-		gbc_leftPanel.gridy = 1;
+		gbc_leftPanel.gridy = 2;
 		contentPane.add(leftPanel, gbc_leftPanel);
 		GridBagLayout gbl_leftPanel = new GridBagLayout();
 		gbl_leftPanel.columnWidths = new int[] { 0, 0 };
@@ -109,23 +125,12 @@ public class TriviaUI extends JFrame implements ActionListener {
 		gbl_leftPanel.rowWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
 		leftPanel.setLayout(gbl_leftPanel);
 
-		questPanel = new JPanel();
-		GridBagConstraints gbc_questPanel = new GridBagConstraints();
-		gbc_questPanel.insets = new Insets(0, 0, 5, 0);
-		gbc_questPanel.anchor = GridBagConstraints.NORTH;
-		gbc_questPanel.fill = GridBagConstraints.HORIZONTAL;
-		gbc_questPanel.gridx = 0;
-		gbc_questPanel.gridy = 0;
-		leftPanel.add(questPanel, gbc_questPanel);
-
-		lblQuest = new JLabel("");
-		questPanel.add(lblQuest);
-
 		picPanel = new JPanel();
 		GridBagConstraints gbc_picPanel = new GridBagConstraints();
+		gbc_picPanel.gridheight = 2;
 		gbc_picPanel.fill = GridBagConstraints.BOTH;
 		gbc_picPanel.gridx = 0;
-		gbc_picPanel.gridy = 1;
+		gbc_picPanel.gridy = 0;
 		leftPanel.add(picPanel, gbc_picPanel);
 		GridBagLayout gbl_picPanel = new GridBagLayout();
 		gbl_picPanel.columnWidths = new int[] { 0, 0 };
@@ -144,7 +149,7 @@ public class TriviaUI extends JFrame implements ActionListener {
 		GridBagConstraints gbc_rightPanel = new GridBagConstraints();
 		gbc_rightPanel.fill = GridBagConstraints.BOTH;
 		gbc_rightPanel.gridx = 1;
-		gbc_rightPanel.gridy = 1;
+		gbc_rightPanel.gridy = 2;
 		contentPane.add(rightPanel, gbc_rightPanel);
 		GridBagLayout gbl_rightPanel = new GridBagLayout();
 		gbl_rightPanel.columnWidths = new int[] { 0, 0 };
@@ -285,7 +290,6 @@ public class TriviaUI extends JFrame implements ActionListener {
 		rdbtnB.setForeground(Color.WHITE);
 		rdbtnC.setForeground(Color.WHITE);
 		rdbtnD.setForeground(Color.WHITE);
-		lblQuest.setForeground(Color.WHITE);
 
 		lblSigalMuseum.setFont(new Font("Serif", Font.BOLD, 48));
 		lblA.setFont(new Font("Serif", Font.PLAIN, 26));
@@ -296,7 +300,6 @@ public class TriviaUI extends JFrame implements ActionListener {
 		rdbtnB.setFont(new Font("Serif", Font.PLAIN, 26));
 		rdbtnC.setFont(new Font("Serif", Font.PLAIN, 26));
 		rdbtnD.setFont(new Font("Serif", Font.PLAIN, 26));
-		lblQuest.setFont(new Font("Serif", Font.PLAIN, 36));
 
 		rdbtnA.setFocusPainted(false);
 		rdbtnB.setFocusPainted(false);
@@ -309,7 +312,6 @@ public class TriviaUI extends JFrame implements ActionListener {
 		panelB.setOpaque(false);
 		panelC.setOpaque(false);
 		panelD.setOpaque(false);
-		questPanel.setOpaque(false);
 		picPanel.setOpaque(false);
 		rightPanel.setOpaque(false);
 		panelSubmit.setOpaque(false);
@@ -335,8 +337,6 @@ public class TriviaUI extends JFrame implements ActionListener {
 		rdbtnB.addActionListener(this);
 		rdbtnC.addActionListener(this);
 		rdbtnD.addActionListener(this);
-
-		setExtendedState(MAXIMIZED_BOTH);
 		setUndecorated(true);
 	}
 
