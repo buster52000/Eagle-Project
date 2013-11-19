@@ -22,11 +22,14 @@ public class GameController implements MouseMotionListener {
 	private boolean inGame;
 	private boolean noFatalErr;
 	private PuzzleBase puzzle = new PuzzleBase();
+	private TriviaBase trivia = new TriviaBase();
+	private WordScrambleBase word = new WordScrambleBase();
 
 	public GameController() {
 		baseUI = new BaseUI();
 		inGame = false;
 		noFatalErr = true;
+		word.preloadFirst();
 		ssController = new FutureAction() {
 			@Override
 			public void performAction() {
@@ -95,7 +98,7 @@ public class GameController implements MouseMotionListener {
 				return false;
 			}
 		}
-		
+
 	}
 
 	@Override
@@ -127,12 +130,13 @@ public class GameController implements MouseMotionListener {
 			Thread game1 = new Thread() {
 				public void run() {
 					try {
-						WordScrambleBase word = new WordScrambleBase();
 						word.playGame();
 						inGame = false;
 						baseUI.requestFocus();
 						Main.infoMsg("Word Scramble Game Completed");
 						ssController.startOrRestartCountdown(ACTIVATE_SS_AfterMilliseconds);
+						word = new WordScrambleBase();
+						word.preloadFirst();
 					} catch (Throwable e) {
 						Main.saveStackTrace(e);
 					}
@@ -145,12 +149,12 @@ public class GameController implements MouseMotionListener {
 			Thread game2 = new Thread() {
 				public void run() {
 					try {
-						TriviaBase trivia = new TriviaBase();
 						trivia.playGame();
 						inGame = false;
 						baseUI.requestFocus();
 						Main.infoMsg("Trivia Game Completed");
 						ssController.startOrRestartCountdown(ACTIVATE_SS_AfterMilliseconds);
+						trivia = new TriviaBase();
 					} catch (Throwable e) {
 						Main.saveStackTrace(e);
 					}

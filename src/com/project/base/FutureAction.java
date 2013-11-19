@@ -7,16 +7,17 @@ public abstract class FutureAction {
 	private TimerTask task;
 	private Timer timer;
 	private boolean waiting = false;
-	
+
 	public FutureAction() {
 	}
-	
+
 	public void startOrRestartCountdown(int activationTimeInMilliseconds) {
 		synchronized (this) {
 			if (waiting) {
+				task.cancel();
 				timer.cancel();
 			}
-			
+
 			task = new TimerTask() {
 				@Override
 				public boolean cancel() {
@@ -24,10 +25,11 @@ public abstract class FutureAction {
 					actionCancelled();
 					return super.cancel();
 				}
-				
+
 				@Override
 				public void run() {
-					performAction();
+					if (task == this)
+						performAction();
 					waiting = false;
 				}
 			};
@@ -47,10 +49,10 @@ public abstract class FutureAction {
 		task = null;
 		waiting = false;
 	}
-	
+
 	// will be called when client should act upon the scheduled action
 	public abstract void performAction();
-	
+
 	// will be called to tell the client the scheduled action has been cancelled
 	public abstract void actionCancelled();
 }

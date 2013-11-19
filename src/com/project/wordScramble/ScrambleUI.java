@@ -27,31 +27,62 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
 import com.project.base.BaseUtils;
+import com.project.base.Main;
 
 @SuppressWarnings("serial")
 public abstract class ScrambleUI extends JFrame {
 
-	private ArrayList<JLabel> answerLabels, scrambleLabels;
-	private JPanel contentPane, titlePanel, mainLabelPanel, rightPanel, answerLabelPanel, scrambleLabelPanel, textPanel, picPanel, btnPanel;
+	private ArrayList<JLabel> answerLabels, scrambleLabels, nextAnswerLabels,
+			nextScrambleLabels;
+	private JPanel contentPane, titlePanel, mainLabelPanel, rightPanel,
+			answerLabelPanel, scrambleLabelPanel, textPanel, picPanel,
+			btnPanel;
 	private JLabel lblSigalMuseum, lblText, lblPic;
-	private boolean exit;
+	private boolean exit, nextScramblePreped;
 	private String currentText;
-	private ImageIcon ico;
+	private ImageIcon nextPicIco;
 	private JButton btnRestartScramble, btnMainMenu;
-	private Scramble currentScramble;
-	private BufferedImage currentImage;
+	private Scramble currentScramble, nextScramble;
+	private BufferedImage currentImage, nextImage;
 	private Random rand;
 
 	public ScrambleUI() {
 
 		rand = new Random();
 
+		addMouseListener(new MouseListener() {
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+			}
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+			}
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				clickCaptured();
+			}
+		});
+
 		getContentPane().setBackground(Color.BLACK);
 		currentScramble = null;
 
 		exit = false;
+		nextScramblePreped = false;
 		answerLabels = new ArrayList<JLabel>();
 		scrambleLabels = new ArrayList<JLabel>();
+		nextAnswerLabels = new ArrayList<JLabel>();
+		nextScrambleLabels = new ArrayList<JLabel>();
 
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
@@ -112,7 +143,7 @@ public abstract class ScrambleUI extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				newScramble(currentScramble, currentImage);
+				prepScramble(currentScramble, currentImage);
 			}
 		});
 		btnPanel.add(btnRestartScramble, gbc_btnRestartScramble);
@@ -186,6 +217,7 @@ public abstract class ScrambleUI extends JFrame {
 
 		lblText = new JLabel();
 		lblText.setFont(new Font("Serif", Font.PLAIN, 24));
+		lblText.setHorizontalAlignment(SwingConstants.CENTER);
 		textPanel.add(lblText);
 
 		picPanel = new JPanel();
@@ -217,33 +249,37 @@ public abstract class ScrambleUI extends JFrame {
 
 	public abstract void complete();
 
+	public abstract void clickCaptured();
+
 	public boolean exit() {
 		return exit;
 	}
 
-	public void newScramble(Scramble scramble, BufferedImage img) {
+	public void prepScramble(Scramble scramble, BufferedImage img) {
 		exit = false;
-		this.currentScramble = scramble;
-		this.currentImage = img;
-		answerLabelPanel.removeAll();
-		scrambleLabelPanel.removeAll();
-		lblText.setText(scramble.getText());
-		lblText.setHorizontalAlignment(SwingConstants.CENTER);
-		ico = new ImageIcon(img);
-		lblPic.setIcon(ico);
+		// currentScramble = scramble;
+		// currentImage = img;
+		// answerLabelPanel.removeAll();
+		// scrambleLabelPanel.removeAll();
+		nextScramble = scramble;
+		img = BaseUtils.scaleWithLongestSide(img, 500);
+		nextImage = img;
+		// lblText.setText(scramble.getText());
+		nextPicIco = new ImageIcon(img);
+		// lblPic.setIcon(ico);
 		String word = scramble.getWord().toUpperCase();
 		ArrayList<Character> chars = new ArrayList<Character>();
 		for (char c : word.toCharArray()) {
 			chars.add(c);
 		}
 		Collections.shuffle(chars);
-		answerLabels.removeAll(answerLabels);
-		scrambleLabels.removeAll(scrambleLabels);
-		currentText = "";
+		nextAnswerLabels.removeAll(nextAnswerLabels);
+		nextScrambleLabels.removeAll(nextScrambleLabels);
+		// currentText = "";
 		for (char c : chars) {
 			String temp = Character.toString(c);
 			if (temp.equals(" "))
-				temp = "•";
+				temp = "~";// •
 			JLabel s = new JLabel(temp);
 			s.setForeground(Color.WHITE);
 			s.setFont(new Font("Serif", Font.BOLD, 24));
@@ -282,6 +318,7 @@ public abstract class ScrambleUI extends JFrame {
 							((JLabel) e.getComponent()).setText("");
 						}
 					}
+					clickCaptured();
 					repaint();
 					refreshCurrentText();
 					inputCaptured();
@@ -308,42 +345,70 @@ public abstract class ScrambleUI extends JFrame {
 							((JLabel) e.getComponent()).setText("");
 						}
 					}
+					clickCaptured();
 					repaint();
 				}
 			});
-			scrambleLabels.add(s);
-			answerLabels.add(a);
+			nextScrambleLabels.add(s);
+			nextAnswerLabels.add(a);
 		}
-		for (JLabel l : answerLabels) {
+		nextScramblePreped = true;
+		// for (JLabel l : answerLabels) {
+		// answerLabelPanel.add(l);
+		// }
+		// for (JLabel l : scrambleLabels) {
+		// scrambleLabelPanel.add(l);
+		// }
+		// repaint();
+		// setVisible(true);
+	}
+
+	@SuppressWarnings("unchecked")
+	public void nextScramble() {
+		if (!nextScramblePreped) {
+			Main.errMsg("Next Scramble called before a scramble was preped", false);
+			return;
+		}
+		nextScramblePreped = false;
+		answerLabels = (ArrayList<JLabel>) nextAnswerLabels.clone();
+		scrambleLabels = (ArrayList<JLabel>) nextScrambleLabels.clone();
+		currentImage = nextImage;
+		currentScramble = nextScramble;
+		lblPic.setIcon(nextPicIco);
+		lblText.setText(currentScramble.getText());
+		answerLabelPanel.removeAll();
+		scrambleLabelPanel.removeAll();
+		for (JLabel l : answerLabels)
 			answerLabelPanel.add(l);
-		}
-		for (JLabel l : scrambleLabels) {
+		for (JLabel l : scrambleLabels)
 			scrambleLabelPanel.add(l);
-		}
 		repaint();
 		setVisible(true);
+	}
+
+	public boolean isPreped() {
+		return nextScramblePreped;
 	}
 
 	public void hint() {
 		ArrayList<Integer> unused = new ArrayList<Integer>();
 		for (JLabel l : answerLabels) {
-			if (l == null || l.getText().equals("")) {
+			if (l.getText() == null || l.getText().equals("")) {
 				unused.add(answerLabels.indexOf(l));
 			}
 		}
 		String strHint = " ";
 		int hint = -1;
 		if (unused.size() > 0) {
-			while (strHint.equals(" ")) {
-				hint = unused.get(rand.nextInt(unused.size()));
-				strHint = String.valueOf(currentScramble.getWord().charAt(hint));
-			}
+			hint = unused.get(rand.nextInt(unused.size()));
+			strHint = String.valueOf(currentScramble.getWord().charAt(hint));
 			for (JLabel l : scrambleLabels) {
 				if (l.getText().equalsIgnoreCase(strHint)) {
 					answerLabels.get(hint).setText(strHint.toUpperCase());
 					l.setText("");
 					l.repaint();
 					answerLabels.get(hint).repaint();
+					inputCaptured();
 					return;
 				}
 			}
@@ -359,6 +424,7 @@ public abstract class ScrambleUI extends JFrame {
 	}
 
 	private void inputCaptured() {
+		refreshCurrentText();
 		if (currentScramble.getWord().equalsIgnoreCase(currentText)) {
 			complete();
 		} else if (currentScramble.getWord().length() == getCurrentText().length())
@@ -393,7 +459,7 @@ public abstract class ScrambleUI extends JFrame {
 				l.setText("");
 			}
 			String temp = l.getText();
-			if (temp.equals("•"))
+			if (temp.equals("~"))
 				temp = " ";
 			currentText = currentText + temp;
 		}

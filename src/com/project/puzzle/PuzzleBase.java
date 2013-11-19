@@ -30,12 +30,17 @@ public class PuzzleBase {
 	private List<URL> templateFilenames, allTemplateFilenames;
 	private FutureAction endGameTimer;
 
-	// be very careful with these!  They are being accessed from 2 threads and careful synchronization is needed to avoid deadlocks or race conditions
+	// be very careful with these! They are being accessed from 2 threads and
+	// careful synchronization is needed to avoid deadlocks or race conditions
 	private PuzzleModel nextPuzzleModel;
 	private Puzzle nextPuzzle;
-	private AtomicBoolean isLoading = new AtomicBoolean();  // this is used for synchronization -- don't use the others while this is true
+	private AtomicBoolean isLoading = new AtomicBoolean(); // this is used for
+															// synchronization
+															// -- don't use the
+															// others while this
+															// is true
 	private Thread loadingThread = null;
-	
+
 	public PuzzleBase() {
 		reset();
 	}
@@ -55,7 +60,7 @@ public class PuzzleBase {
 				}
 
 			};
-			
+
 			endGameTimer = new FutureAction() {
 
 				@Override
@@ -70,7 +75,7 @@ public class PuzzleBase {
 					Main.errMsg("Puzzle end game timer canceled", false);
 				}
 			};
-			
+
 			ui.addMouseMotionListener(new MouseMotionListener() {
 
 				@Override
@@ -83,7 +88,7 @@ public class PuzzleBase {
 					endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 				}
 			});
-			
+
 			allPuzzles = loadPuzzles("/gameFiles/puzzles/list.txt");
 			allTemplateFilenames = loadTemplateNames("/gameFiles/puzzleTemplates/list.txt");
 		} else {
@@ -98,8 +103,12 @@ public class PuzzleBase {
 		currentPuzzle = null;
 		currentPuzzleModel = null;
 		synchronized (isLoading) {
-			if (isLoading.get()) 
-				try {isLoading.wait();} catch (InterruptedException e) {/*shouldn't happen*/}
+			if (isLoading.get())
+				try {
+					isLoading.wait();
+				} catch (InterruptedException e) {
+					// shouldn't happen
+				}
 			currentPuzzle = nextPuzzle;
 			currentPuzzleModel = nextPuzzleModel;
 		}
@@ -113,7 +122,7 @@ public class PuzzleBase {
 			return false;
 		}
 	}
-	
+
 	public void playGame() {
 		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 		getPuzzleAndStartPreloadingNext();
@@ -132,26 +141,48 @@ public class PuzzleBase {
 
 	private void preloadNextPuzzle() {
 		if (puzzles.size() > 0) {
-			// it's possible (though unlikely) that we're already loading something...  
-			// to avoid any confusion, let's wait for that to finish, then ignore it's results, before proceeding
+			// it's possible (though unlikely) that we're already loading
+			// something...
+			// to avoid any confusion, let's wait for that to finish, then
+			// ignore it's results, before proceeding
 			synchronized (isLoading) {
-				if (loadingThread != null && loadingThread.isAlive()) 
+				if (loadingThread != null && loadingThread.isAlive())
 					if (isLoading.get()) {
-						loadingThread.setPriority(Thread.MAX_PRIORITY); // raise it 'cause we're waiting for it
-						loadingThread.interrupt(); // try killing it to make sure we don't get stuck in case it's stuck -- either way we're going to ignore it's results
-						try {isLoading.wait();} catch (InterruptedException e) {/*shouldn't happen*/}
+						loadingThread.setPriority(Thread.MAX_PRIORITY); // raise
+																		// it
+																		// 'cause
+																		// we're
+																		// waiting
+																		// for
+																		// it
+						loadingThread.interrupt(); // try killing it to make
+													// sure we don't get stuck
+													// in case it's stuck --
+													// either way we're going to
+													// ignore it's results
+						try {
+							isLoading.wait();
+						} catch (InterruptedException e) {/* shouldn't happen */
+						}
 					}
 			}
-			
-			Random rand = Main.test ? new Random(1) : new Random();  // for testing, it's much easier to always see the same sequence
-			
+
+			Random rand = Main.test ? new Random(1) : new Random(); // for
+																	// testing,
+																	// it's much
+																	// easier to
+																	// always
+																	// see the
+																	// same
+																	// sequence
+
 			final Puzzle nextPuzzle = puzzles.get(rand.nextInt(puzzles.size()));
 			final URL nextImageUrl = nextPuzzle.getImageUrl();
 			final URL nextTemplateUrl = templateFilenames.get(rand.nextInt(templateFilenames.size()));
 			final String nextPuzzleName = nextPuzzle.getName();
 			loadingThread = new Thread() {
 				public void run() {
-					Main.infoMsg("Preloading next puzzle model: "+nextPuzzleName);
+					Main.infoMsg("Preloading next puzzle model: " + nextPuzzleName);
 					PuzzleModel nextPuzzleModel = loadPuzzle(nextImageUrl, nextTemplateUrl, nextPuzzleName);
 					setNextPuzzle(nextPuzzle, nextPuzzleModel);
 				}
@@ -160,14 +191,19 @@ public class PuzzleBase {
 				isLoading.set(true);
 				isLoading.notify();
 			}
-			loadingThread.setDaemon(true); // don't want to prevent the program from closing if this thread is still running
-			loadingThread.setPriority(Thread.MIN_PRIORITY); // let it go slowly; raise it if we end up waiting for it
+			loadingThread.setDaemon(true); // don't want to prevent the program
+											// from closing if this thread is
+											// still running
+			loadingThread.setPriority(Thread.MIN_PRIORITY); // let it go slowly;
+															// raise it if we
+															// end up waiting
+															// for it
 			loadingThread.start();
 		} else {
 			setNextPuzzle(null, null);
 		}
 	}
-	
+
 	private void setNextPuzzle(Puzzle nextPuzzle, PuzzleModel nextPuzzleModel) {
 		synchronized (isLoading) {
 			this.nextPuzzle = nextPuzzle;
@@ -177,33 +213,35 @@ public class PuzzleBase {
 			Main.infoMsg("next puzzle model is waiting...");
 		}
 	}
-	
+
 	private PuzzleModel loadPuzzle(URL imageUrl, URL templateUrl, String name) {
-		Main.infoMsg("Preparing puzzle model "+name);
-		
+		Main.infoMsg("Preparing puzzle model " + name);
+
 		PuzzleModelDeserializer deserializer = new PuzzleModelDeserializer();
 		String filenameRoot = PuzzleInstaller.getRootDir(imageUrl, templateUrl, name);
 		PuzzleModel puzzle = deserializer.read(filenameRoot);
-		
-		// if puzzle is not available now, it might just mean that the puzzle/template combo has never run through PuzzleInstall.
-		// Doing so now will be **slow**, but there's really no other choice.  So, let the user know, run through install, and try again
+
+		// if puzzle is not available now, it might just mean that the
+		// puzzle/template combo has never run through PuzzleInstall.
+		// Doing so now will be **slow**, but there's really no other choice.
+		// So, let the user know, run through install, and try again
 		if (puzzle == null) {
-			Main.errMsg("Couldn't load puzzle model "+name+" with template "+templateUrl+" ; will try to install that combo now; please wait...", false);
+			Main.errMsg("Couldn't load puzzle model " + name + " with template " + templateUrl + " ; will try to install that combo now; please wait...", false);
 			PuzzleInstaller installer = new PuzzleInstaller();
 			puzzle = installer.createAndInstallFromUrls(imageUrl, templateUrl, name);
 			if (puzzle == null) {
-				Main.errMsg("Couldn't create puzzle model "+name+" from the raw source data; giving up on this puzzle", false);
+				Main.errMsg("Couldn't create puzzle model " + name + " from the raw source data; giving up on this puzzle", false);
 				return null;
 			}
 		}
-		Main.infoMsg("Done loading puzzle model "+name);
-		
+		Main.infoMsg("Done loading puzzle model " + name);
+
 		return puzzle;
 	}
-	
+
 	public static List<URL> loadTemplateNames(String templateListResource) {
 		List<URL> templates = new ArrayList<URL>();
-		
+
 		// load any that are part of the resources
 		InputStream templateList = PuzzleBase.class.getResourceAsStream(templateListResource);
 		BufferedReader breader = new BufferedReader(new InputStreamReader(templateList));
@@ -211,12 +249,12 @@ public class PuzzleBase {
 		try {
 			while ((line = breader.readLine()) != null) {
 				String templateName = line;
-				Main.infoMsg("Registering template: "+templateName);
+				Main.infoMsg("Registering template: " + templateName);
 				URL url = PuzzleBase.class.getResource(templateName);
 				templates.add(url);
 			}
 		} catch (IOException e) {
-			// report problem, but continue 
+			// report problem, but continue
 			Main.errMsg("Error while loading the template list resource.  The set of available templates may not be complete", false);
 		} finally {
 			try {
@@ -228,7 +266,7 @@ public class PuzzleBase {
 		}
 
 		// load any extras at user.home
-		File dir = new File(System.getProperty("user.home")+System.getProperty("file.separator")+"gameFiles/puzzleTemplates/");
+		File dir = new File(System.getProperty("user.home") + System.getProperty("file.separator") + "gameFiles/puzzleTemplates/");
 		if (!dir.exists()) {
 			dir.mkdirs();
 			return templates;
@@ -237,21 +275,21 @@ public class PuzzleBase {
 		for (File f : files) {
 			if (!f.getName().endsWith(".txt")) {
 				try {
-					Main.infoMsg("Registering template: "+f.getAbsolutePath());
+					Main.infoMsg("Registering template: " + f.getAbsolutePath());
 					templates.add(f.toURI().toURL());
 				} catch (MalformedURLException e) {
-					// report problem, but continue 
+					// report problem, but continue
 					Main.errMsg("Error while loading user-supplied templates.  The set of available templates may not be complete", false);
 				}
 			}
 		}
-		
+
 		return templates;
 	}
 
 	public static List<Puzzle> loadPuzzles(String puzzleListResource) {
 		List<Puzzle> puzzles = new ArrayList<Puzzle>();
-		
+
 		// load any that are part of the resources
 		InputStream puzzleList = PuzzleBase.class.getResourceAsStream(puzzleListResource);
 		BufferedReader breader = new BufferedReader(new InputStreamReader(puzzleList));
@@ -262,7 +300,7 @@ public class PuzzleBase {
 				loadPuzzleDescriptor(puzzles, PuzzleBase.class.getResourceAsStream(puzzleName));
 			}
 		} catch (IOException e) {
-			// report problem, but continue 
+			// report problem, but continue
 			Main.errMsg("Error while loading the puzzle list resource.  The set of available puzzles may not be complete", false);
 		} finally {
 			try {
@@ -272,9 +310,9 @@ public class PuzzleBase {
 				// not going to worry about this case
 			}
 		}
-		
+
 		// load any extras at user.home
-		File dir = new File(System.getProperty("user.home")+System.getProperty("file.separator")+"gameFiles/puzzles/");
+		File dir = new File(System.getProperty("user.home") + System.getProperty("file.separator") + "gameFiles/puzzles/");
 		if (!dir.exists()) {
 			dir.mkdirs();
 			return puzzles;
@@ -283,7 +321,7 @@ public class PuzzleBase {
 		for (File f : files) {
 			loadPuzzleDescriptor(puzzles, f);
 		}
-		
+
 		return puzzles;
 	}
 
@@ -305,16 +343,17 @@ public class PuzzleBase {
 		if (path != null && name != null && description != null) {
 			// supplied path can only be a resource in this case
 			URL url = PuzzleBase.class.getResource(path);
-			Main.infoMsg("Registering puzzle: "+path);
+			Main.infoMsg("Registering puzzle: " + path);
 			puzzles.add(new Puzzle(url, description, name));
 			return;
-		} 
-		
+		}
+
 		Main.errMsg("The puzzle metadata file doesn't appear to exist", false);
 	}
-	
+
 	private static void loadPuzzleDescriptor(List<Puzzle> puzzles, File f) {
-		// for this function, we're working outside the jar -- maybe a puzzle has been added without updating the jar
+		// for this function, we're working outside the jar -- maybe a puzzle
+		// has been added without updating the jar
 		String path = null;
 		String name = null;
 		String description = null;
@@ -333,18 +372,18 @@ public class PuzzleBase {
 			// supplied path should be an absolute path in this case
 			File f2 = new File(path);
 			if (f2.exists()) {
-				Main.infoMsg("Registering puzzle: "+f2.getAbsolutePath());
+				Main.infoMsg("Registering puzzle: " + f2.getAbsolutePath());
 				try {
 					puzzles.add(new Puzzle(f2.toURI().toURL(), description, name));
 				} catch (MalformedURLException e) {
-					// report problem, but continue 
+					// report problem, but continue
 					Main.errMsg("Error while loading a puzzle descriptor.  The set of available puzzles may not be complete", false);
 				}
 				return;
 			}
-			
-		} 
-		
+
+		}
+
 		Main.errMsg("The puzzle metadata file doesn't appear to exist", false);
 	}
 

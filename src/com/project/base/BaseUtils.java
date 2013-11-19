@@ -2,6 +2,7 @@ package com.project.base;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -23,7 +24,6 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-
 public class BaseUtils {
 
 	public static BufferedImage loadImage(URL url, int smallerSideMax) {
@@ -33,15 +33,15 @@ public class BaseUtils {
 			int w = before.getWidth();
 			int h = before.getHeight();
 			int smaller = w < h ? w : h;
-			if (smaller < smallerSideMax) 
+			if (smaller < smallerSideMax)
 				return before;
 			else {
-				double s = smallerSideMax*1.0 / smaller;
-				
+				double s = smallerSideMax * 1.0 / smaller;
+
 				AffineTransform at = new AffineTransform();
-				at.scale(s,s);
+				at.scale(s, s);
 				AffineTransformOp scaleOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
-				img = scaleOp.filter(before, new BufferedImage((int) (s*w+0.5), (int) (s*h+0.5), BufferedImage.TYPE_INT_ARGB));
+				img = scaleOp.filter(before, new BufferedImage((int) (s * w + 0.5), (int) (s * h + 0.5), BufferedImage.TYPE_INT_ARGB));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -51,7 +51,7 @@ public class BaseUtils {
 
 	public static void displayResult(final JLabel lblPic, String imageResourceName, final String soundResource) {
 		final Icon holder = lblPic == null ? null : lblPic.getIcon();
-		if (lblPic != null) 
+		if (lblPic != null)
 			lblPic.setIcon(new ImageIcon(BaseUtils.class.getResource(imageResourceName)));
 		if (Main.soundEffects) {
 			SwingUtilities.invokeLater(new Runnable() {
@@ -64,16 +64,16 @@ public class BaseUtils {
 						clip = AudioSystem.getClip();
 						clip.open(as);
 					} catch (UnsupportedAudioFileException e1) {
-						Main.errMsg(soundResource+" is not supported", false);
+						Main.errMsg(soundResource + " is not supported", false);
 						Main.saveStackTrace(e1);
 					} catch (IOException e1) {
-						Main.errMsg("IOExcaption with "+soundResource, false);
+						Main.errMsg("IOExcaption with " + soundResource, false);
 						Main.saveStackTrace(e1);
 					} catch (LineUnavailableException e) {
-						Main.errMsg("LineUnavailableException for "+soundResource, false);
+						Main.errMsg("LineUnavailableException for " + soundResource, false);
 						Main.saveStackTrace(e);
 					}
-						clip.start();
+					clip.start();
 					try {
 						Thread.sleep(2000);
 					} catch (InterruptedException e) {
@@ -86,7 +86,7 @@ public class BaseUtils {
 					} catch (IOException e) {
 						Main.saveStackTrace(e);
 					}
-					if (lblPic != null) 
+					if (lblPic != null)
 						lblPic.setIcon(holder);
 				}
 			});
@@ -119,4 +119,24 @@ public class BaseUtils {
 		UIManager.put("OptionPane.messageFont", new Font("Serif", Font.PLAIN, 20));
 		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
 	}
+
+	public static BufferedImage scaleWithLongestSide(BufferedImage bi, int size) {
+		int w = 1;
+		int h = 1;
+		if (bi.getHeight() == bi.getWidth()) {
+			w = size;
+			h = size;
+		} else if (bi.getHeight() > bi.getWidth()) {
+			h = size;
+			w = h * bi.getWidth() / bi.getHeight();
+		} else if (bi.getHeight() < bi.getWidth()) {
+			w = size;
+			h = w * bi.getHeight() / bi.getWidth();
+		}
+		Image img = bi.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+		bi = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+		bi.getGraphics().drawImage(img, 0, 0, null);
+		return bi;
+	}
+
 }
