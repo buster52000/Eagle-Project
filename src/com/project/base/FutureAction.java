@@ -4,50 +4,43 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public abstract class FutureAction {
-	private TimerTask task;
 	private Timer timer;
-	private boolean waiting = false;
 
 	public FutureAction() {
 	}
 
 	public void startOrRestartCountdown(int activationTimeInMilliseconds) {
 		synchronized (this) {
-			if (waiting) {
-				task.cancel();
+			if (timer != null) {
 				timer.cancel();
+				timer = null;
 			}
 
-			task = new TimerTask() {
+			TimerTask task = new TimerTask() {
 				@Override
 				public boolean cancel() {
-					waiting = false;
 					actionCancelled();
 					return super.cancel();
 				}
 
 				@Override
 				public void run() {
-					if (task == this)
-						performAction();
-					waiting = false;
+					performAction();
 				}
 			};
 
 			boolean isDaemon = true;
 			timer = new Timer(isDaemon);
 			timer.schedule(task, activationTimeInMilliseconds);
-			waiting = true;
 		}
 	}
 
-	// for the client to cancel any pending actions...
+	// for the client to cancel any pending actions... (but does not try to cancel any tasks that may have already started)
 	public void cancel() {
-		timer.cancel();
-		task.cancel();
-		timer = null;
-		task = null;
-		waiting = false;
+		synchronized (this) {
+			timer.cancel();
+			timer = null;
+		}
 	}
 
 	// will be called when client should act upon the scheduled action
