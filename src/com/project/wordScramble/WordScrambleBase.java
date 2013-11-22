@@ -34,7 +34,7 @@ public class WordScrambleBase {
 	private BufferedImage currentImage, nextImage;
 	private boolean scrambleLoaded, nextScramblePreped, noMoreScrambles;
 
-	private static final int HINT_WAIT_TIME = 15000;
+	private static final int HINT_WAIT_TIME = 1000;
 
 	@SuppressWarnings("serial")
 	public WordScrambleBase() {

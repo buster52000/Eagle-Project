@@ -121,6 +121,8 @@ public class BaseUtils {
 	}
 
 	public static BufferedImage scaleWithLongestSide(BufferedImage bi, int size) {
+		if(bi == null)
+			return bi;
 		int w = 1;
 		int h = 1;
 		if (bi.getHeight() == bi.getWidth()) {
@@ -137,6 +139,29 @@ public class BaseUtils {
 		bi = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 		bi.getGraphics().drawImage(img, 0, 0, null);
 		return bi;
+	}
+	
+	public static void playClick() {
+		try {
+			AudioInputStream in = AudioSystem.getAudioInputStream(new BufferedInputStream(BaseUtils.class.getResourceAsStream("/gameFiles/sounds/click.wav")));
+			final Clip clip = AudioSystem.getClip();
+			clip.open(in);
+			Thread sound = new Thread(new Runnable(){
+
+				@Override
+				public void run() {
+					clip.start();
+				}
+				
+			});
+			sound.start();
+		} catch (IOException e2) {
+			e2.printStackTrace();
+		} catch (LineUnavailableException e) {
+			e.printStackTrace();
+		} catch (UnsupportedAudioFileException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

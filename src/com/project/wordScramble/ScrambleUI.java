@@ -45,6 +45,8 @@ public abstract class ScrambleUI extends JFrame {
 	private Scramble currentScramble, nextScramble;
 	private BufferedImage currentImage, nextImage;
 	private Random rand;
+	
+	public static final String spaceChar = "~"; // •
 
 	public ScrambleUI() {
 
@@ -279,7 +281,7 @@ public abstract class ScrambleUI extends JFrame {
 		for (char c : chars) {
 			String temp = Character.toString(c);
 			if (temp.equals(" "))
-				temp = "~";// •
+				temp = spaceChar;
 			JLabel s = new JLabel(temp);
 			s.setForeground(Color.WHITE);
 			s.setFont(new Font("Serif", Font.BOLD, 24));
@@ -347,6 +349,7 @@ public abstract class ScrambleUI extends JFrame {
 					}
 					clickCaptured();
 					repaint();
+					inputCaptured();
 				}
 			});
 			nextScrambleLabels.add(s);
@@ -412,6 +415,29 @@ public abstract class ScrambleUI extends JFrame {
 					return;
 				}
 			}
+			char [] answerChars = currentScramble.getWord().toCharArray();
+			ArrayList<Integer> incorrect = new ArrayList<Integer>();
+			for(int i = 0; i < answerChars.length; i++) {
+				char ansTxt = answerLabels.get(i).getText().length() == 1 ? answerLabels.get(i).getText().charAt(0) : '$';
+				char cTxt = answerChars[i];
+				if(cTxt == ' ')
+					cTxt = spaceChar.charAt(0);
+				if(ansTxt != '$' && ansTxt != cTxt) {
+					incorrect.add(i);
+				}
+//				if(!answerLabels.get(i).getText().equals("") && !(answerLabels.get(i).getText().equals(answerChars[i]) || (answerLabels.get(i).getText().equals(spaceChar) && answerChars[i] == ' '))) {
+//					incorrect.add(i);
+//				}
+			}
+			int wrong = incorrect.get(rand.nextInt(incorrect.size()));
+			for(JLabel l : scrambleLabels) {
+				if(l.getText().equals("")) {
+					l.setText(answerLabels.get(wrong).getText());
+					answerLabels.get(wrong).setText("");
+					inputCaptured();
+					return;
+				}
+			}
 		}
 	}
 
@@ -424,6 +450,7 @@ public abstract class ScrambleUI extends JFrame {
 	}
 
 	private void inputCaptured() {
+		BaseUtils.playClick();
 		refreshCurrentText();
 		if (currentScramble.getWord().equalsIgnoreCase(currentText)) {
 			complete();
@@ -459,7 +486,7 @@ public abstract class ScrambleUI extends JFrame {
 				l.setText("");
 			}
 			String temp = l.getText();
-			if (temp.equals("~"))
+			if (temp.equals(spaceChar))
 				temp = " ";
 			currentText = currentText + temp;
 		}
