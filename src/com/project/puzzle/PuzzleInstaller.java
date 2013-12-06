@@ -24,7 +24,7 @@ public class PuzzleInstaller {
 	private int xPieces, yPieces;
 	private BufferedImage pieces[][];
 	private Point centers[][];
-	private int xIntervals[], yIntervals[];
+	private double xIntervals[], yIntervals[];
 	private BufferedImage img;
 	
 	public PuzzleModel createAndInstallFromUrls(URL imageUrl, URL templateUrl, String name) {
@@ -70,22 +70,20 @@ public class PuzzleInstaller {
 
 		double sW = iw / (double) w;
 		double sH = ih / (double) h;
-		int[] xRedLoc = new int[xPieces];
-		int[] yRedLoc = new int[yPieces];
+		double [] xRedLoc = new double[xPieces];
+		double [] yRedLoc = new double[yPieces];
 		for (int yI = 0; yI < unscaledTemplateYLoc.size(); yI++)
-			yRedLoc[yI] = (int) (unscaledTemplateYLoc.get(yI) * sH);
+			yRedLoc[yI] = unscaledTemplateYLoc.get(yI) * sH;
 		for (int xI = 0; xI < unscaledTemplateXLoc.size(); xI++)
-			xRedLoc[xI] = (int) (unscaledTemplateXLoc.get(xI) * sW);
+			xRedLoc[xI] = unscaledTemplateXLoc.get(xI) * sW;
 
-		xIntervals = new int[xPieces - 1];
-		yIntervals = new int[yPieces - 1];
+		xIntervals = new double[xPieces - 1];
+		yIntervals = new double[yPieces - 1];
 
-		for (int c = 0; c < xIntervals.length; c++) {
+		for (int c = 0; c < xIntervals.length; c++) 
 			xIntervals[c] = xRedLoc[c + 1] - xRedLoc[c];
-		}
-		for (int d = 0; d < yIntervals.length; d++) {
+		for (int d = 0; d < yIntervals.length; d++) 
 			yIntervals[d] = yRedLoc[d + 1] - yRedLoc[d];
-		}
 
 		pieces = new BufferedImage[xPieces][yPieces];
 
@@ -116,7 +114,7 @@ public class PuzzleInstaller {
 					return null;
 				int unscaledCenter[] = new int[2];
 				findCenter(unscaledTemplateXLoc.get(i), unscaledTemplateYLoc.get(j), prescaledCurrentTemplate, prescaledCurrentTemplate, unscaledCenter);
-				centers[i][j] = new Point((int) (unscaledCenter[0] / mX), (int) (unscaledCenter[1] / mY));
+				centers[i][j] = new Point((int) (unscaledCenter[0] / mX  + 0.5), (int) (unscaledCenter[1] / mY + 0.5));
 			}
 		}
 		

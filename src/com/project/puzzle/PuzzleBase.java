@@ -52,16 +52,19 @@ public class PuzzleBase {
 
 				@Override
 				public void complete() {
-					displayCorrect();
-					BaseUtils.showDescriptionDialog(currentPuzzle.getDescription(), currentPuzzleModel.getOriginalImage(), currentPuzzle.getName());
-					boolean isNextAvailable = getPuzzleAndStartPreloadingNext();
-					if (!isNextAvailable)
-						gameOver();
+					try {
+						displayCorrect();
+						BaseUtils.showDescriptionDialog(currentPuzzle.getDescription(), currentPuzzleModel.getOriginalImage(), currentPuzzle.getName());
+					} finally {
+						boolean isNextAvailable = getPuzzleAndStartPreloadingNext();
+						if (!isNextAvailable)
+							gameOver();
+					}
 				}
 
 			};
 
-			endGameTimer = new FutureAction() {
+			endGameTimer = new FutureAction("PuzzleInactivity") {
 
 				@Override
 				public void performAction() {

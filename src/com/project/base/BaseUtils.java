@@ -8,8 +8,13 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.AudioInputStream;
@@ -21,11 +26,14 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 public class BaseUtils {
-
+	
+	private static Map<String,InputStream> soundEffectInputStreams = new HashMap<String,InputStream>(); // cache the result streams so only loaded once
+	private static Map<String,AudioInputStream> soundEffectAudioStreams = new HashMap<String,AudioInputStream>(); // cache the sound effect streams so only loaded once
+	private static int soundEffectCnt = 0;
+	
 	public static BufferedImage loadImage(URL url, int smallerSideMax) {
 		BufferedImage img = null;
 		try {
@@ -49,47 +57,145 @@ public class BaseUtils {
 		return img;
 	}
 
+	public static void playSoundEffect0(final String soundResource, final int durationInMillis, final Runnable finallyAction) {
+		AudioInputStream as = soundEffectAudioStreams.get(soundResource);
+		if (as == null) {
+			try {
+				InputStream is = new BufferedInputStream(BaseUtils.class.getResourceAsStream(soundResource));
+				as = AudioSystem.getAudioInputStream(is);
+				if (as.markSupported()) {
+					// may not be able to reuse, so don't cache in that case
+					soundEffectAudioStreams.put(soundResource, as);
+					soundEffectInputStreams.put(soundResource, is);
+				} else {
+					System.out.println("INFO: Can't reuse this audio stream: "+soundResource);
+				}
+			} catch (UnsupportedAudioFileException e1) {
+				Main.errMsg(soundResource + " is not supported", false);
+				Main.saveStackTrace(e1);
+			} catch (IOException e) {
+				Main.errMsg("IOExcaption with " + soundResource, false);
+				Main.saveStackTrace(e);
+			} 
+		}
+		if (as == null) {
+			Main.errMsg("Couldn't obtain Sound Effect \""+soundResource+"\"", false);
+			Main.infoMsg("Stacktrace for previous errMsg: "+Thread.currentThread().getStackTrace());
+			return;
+		}
+		
+		try {
+			as.reset();
+			final Clip clip = AudioSystem.getClip();
+			if (clip == null) {
+				Main.errMsg("Couldn't obtain AudioSystem clip", false);
+				Main.infoMsg("Stacktrace for previous errMsg: "+Thread.currentThread().getStackTrace());
+				return;
+			}
+			clip.open(as);
+			Runnable r = new Runnable() {
+				@Override
+				public void run() {
+					try {
+						clip.start();
+						Thread.sleep(durationInMillis);
+					} catch (InterruptedException e) {
+						Main.errMsg("Thread sleep InterruptedExcaption", false);
+						Main.saveStackTrace(e);
+					} finally {
+						clip.stop();
+						clip.close();
+						if (finallyAction != null)
+							finallyAction.run();
+					}
+				}
+			};
+			Thread t = new Thread(null, r, "SoundEffect"+(soundEffectCnt++));
+			t.setDaemon(true);
+			t.start();
+		} catch (IOException e1) {
+			Main.errMsg("IOException with " + soundResource, false);
+			Main.saveStackTrace(e1);
+		} catch (LineUnavailableException e) {
+			Main.errMsg("LineUnavailableException for " + soundResource, false);
+			Main.saveStackTrace(e);
+		}
+		
+	}
+	
+	private static Map<String,List<Clip>> soundEffectPools = new HashMap<String,List<Clip>>();
+	
+	public static void playSoundEffect(final String soundResource, final int durationInMillis, final Runnable finallyAction) {
+		final Clip clip;
+		synchronized (soundEffectPools) {
+			List<Clip> clipPool = soundEffectPools.get(soundResource);
+			if (clipPool == null) soundEffectPools.put(soundResource, clipPool = new LinkedList<Clip>());
+			if (clipPool.size() == 0) {
+				try {
+					AudioInputStream as = AudioSystem.getAudioInputStream(new BufferedInputStream(BaseUtils.class.getResourceAsStream(soundResource)));
+					Clip clip2 = AudioSystem.getClip();
+					clip2.open(as);
+					clipPool.add(clip2);
+				} catch (UnsupportedAudioFileException e1) {
+					Main.errMsg(soundResource + " is not supported", false);
+					Main.saveStackTrace(e1);
+				} catch (IOException e) {
+					Main.errMsg("IOExcaption with " + soundResource, false);
+					Main.saveStackTrace(e);
+				} catch (LineUnavailableException e) {
+					Main.errMsg("LineUnavailableException for " + soundResource, false);
+					Main.saveStackTrace(e);
+				}
+			}
+			clip = clipPool.remove(0);
+		}
+		if (clip == null) {
+			Main.errMsg("Couldn't obtain AudioSystem clip", false);
+			Main.infoMsg("Stacktrace for previous errMsg: "+Thread.currentThread().getStackTrace());
+			return;
+		}
+		
+		clip.setFramePosition(0);
+		Runnable r = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					clip.start();
+					Thread.sleep(durationInMillis);
+				} catch (InterruptedException e) {
+					Main.errMsg("Thread sleep InterruptedExcaption", false);
+					Main.saveStackTrace(e);
+				} finally {
+					clip.stop();
+					synchronized (soundEffectPools) {
+						soundEffectPools.get(soundResource).add(clip);
+					}
+					if (finallyAction != null)
+						finallyAction.run();
+				}
+			}
+		};
+		Thread t = new Thread(null, r, "SoundEffect"+(soundEffectCnt++));
+		t.setDaemon(true);
+		t.start();
+		
+	}
+	
 	public static void displayResult(final JLabel lblPic, String imageResourceName, final String soundResource) {
 		final Icon holder = lblPic == null ? null : lblPic.getIcon();
 		if (lblPic != null)
 			lblPic.setIcon(new ImageIcon(BaseUtils.class.getResource(imageResourceName)));
 		if (Main.soundEffects) {
-			SwingUtilities.invokeLater(new Runnable() {
+			playSoundEffect(soundResource, 2000, new Runnable() {
 				@Override
 				public void run() {
-					AudioInputStream as = null;
-					Clip clip = null;
-					try {
-						as = AudioSystem.getAudioInputStream(new BufferedInputStream(BaseUtils.class.getResourceAsStream(soundResource)));
-						clip = AudioSystem.getClip();
-						clip.open(as);
-					} catch (UnsupportedAudioFileException e1) {
-						Main.errMsg(soundResource + " is not supported", false);
-						Main.saveStackTrace(e1);
-					} catch (IOException e1) {
-						Main.errMsg("IOExcaption with " + soundResource, false);
-						Main.saveStackTrace(e1);
-					} catch (LineUnavailableException e) {
-						Main.errMsg("LineUnavailableException for " + soundResource, false);
-						Main.saveStackTrace(e);
-					}
-					clip.start();
-					try {
-						Thread.sleep(2000);
-					} catch (InterruptedException e) {
-						Main.errMsg("Thread sleep InterruptedExcaption", false);
-						Main.saveStackTrace(e);
-					}
-					clip.close();
-					try {
-						as.close();
-					} catch (IOException e) {
-						Main.saveStackTrace(e);
-					}
 					if (lblPic != null)
 						lblPic.setIcon(holder);
 				}
 			});
+		} else {
+			if (lblPic != null)
+				lblPic.setIcon(holder);
 		}
 	}
 
@@ -118,11 +224,11 @@ public class BaseUtils {
 		UIManager.put("Panel.background", Color.BLACK);
 		UIManager.put("OptionPane.messageFont", new Font("Serif", Font.PLAIN, 20));
 		JOptionPane.showOptionDialog(null, formatted, title, JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, ico, new String[] { "Next" }, "Next");
-	}
+ 	}
 
 	public static BufferedImage scaleWithLongestSide(BufferedImage bi, int size) {
 		if(bi == null)
-			return bi;
+			return null;
 		int w = 1;
 		int h = 1;
 		if (bi.getHeight() == bi.getWidth()) {
@@ -142,26 +248,8 @@ public class BaseUtils {
 	}
 	
 	public static void playClick() {
-		try {
-			AudioInputStream in = AudioSystem.getAudioInputStream(new BufferedInputStream(BaseUtils.class.getResourceAsStream("/gameFiles/sounds/click.wav")));
-			final Clip clip = AudioSystem.getClip();
-			clip.open(in);
-			Thread sound = new Thread(new Runnable(){
-
-				@Override
-				public void run() {
-					clip.start();
-				}
-				
-			});
-			sound.start();
-		} catch (IOException e2) {
-			e2.printStackTrace();
-		} catch (LineUnavailableException e) {
-			e.printStackTrace();
-		} catch (UnsupportedAudioFileException e) {
-			e.printStackTrace();
-		}
+		playSoundEffect("/gameFiles/sounds/click.wav", 500, null); // review of softclick.wav in Audacity confirms that 50ms is it's duration
+		// callers should not call this function more frequently than about 30ms apart
 	}
 
 }

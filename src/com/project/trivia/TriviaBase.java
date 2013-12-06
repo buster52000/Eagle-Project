@@ -45,7 +45,7 @@ public class TriviaBase {
 		ui = new TriviaUI();
 		timer = new Timer();
 
-		endGameTimer = new FutureAction() {
+		endGameTimer = new FutureAction("TriviaInactivity") {
 
 			@Override
 			public void performAction() {

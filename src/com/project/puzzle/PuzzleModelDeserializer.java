@@ -19,7 +19,7 @@ public class PuzzleModelDeserializer {
 	
 	private int xsize, ysize;
 	private Point centers[][];
-	private int[] xIntervals, yIntervals; 
+	private double[] xIntervals, yIntervals; 
 	private BufferedImage[][] pieces;
 	private BufferedImage originalImage;
 
@@ -59,8 +59,8 @@ public class PuzzleModelDeserializer {
 			xsize = dis.readInt();
 			ysize = dis.readInt();
 			centers = new Point[xsize][ysize];
-			xIntervals = new int[xsize - 1];
-			yIntervals = new int[ysize - 1];
+			xIntervals = new double[xsize - 1];
+			yIntervals = new double[ysize - 1];
 			pieces = new BufferedImage[xsize][ysize];
 
 			for (int y = 0; y < ysize; y++) {
@@ -74,10 +74,10 @@ public class PuzzleModelDeserializer {
 			}
 			
 			for (int y = 0; y < ysize-1; y++) {
-				yIntervals[y] = dis.readInt();
+				yIntervals[y] = dis.readDouble();
 			}
 			for (int x = 0; x < xsize-1; x++) {
-				xIntervals[x] = dis.readInt();
+				xIntervals[x] = dis.readDouble();
 			}
 
 		} catch (FileNotFoundException e) {

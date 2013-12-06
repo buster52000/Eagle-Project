@@ -34,7 +34,7 @@ public class WordScrambleBase {
 	private BufferedImage currentImage, nextImage;
 	private boolean scrambleLoaded, nextScramblePreped, noMoreScrambles;
 
-	private static final int HINT_WAIT_TIME = 1000;
+	private static final int HINT_WAIT_TIME = 15000;
 
 	@SuppressWarnings("serial")
 	public WordScrambleBase() {
@@ -62,7 +62,7 @@ public class WordScrambleBase {
 
 		};
 
-		hintTimer = new FutureAction() {
+		hintTimer = new FutureAction("ScrambleHint") {
 
 			@Override
 			public void performAction() {
@@ -80,7 +80,7 @@ public class WordScrambleBase {
 		currentScramble = null;
 		currentImage = null;
 
-		endGameTimer = new FutureAction() {
+		endGameTimer = new FutureAction("ScrambleInactivity") {
 
 			@Override
 			public void performAction() {
