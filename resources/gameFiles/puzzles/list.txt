@@ -1,2 +1,9 @@
 /gameFiles/puzzles/abacus.txt
 /gameFiles/puzzles/mechanicalbank.txt
+/gameFiles/puzzles/peeps.txt
+/gameFiles/puzzles/arrowheads.txt
+/gameFiles/puzzles/bachmann.txt
+/gameFiles/puzzles/civilwarflag.txt
+/gameFiles/puzzles/earlheldband.txt
+/gameFiles/puzzles/mixsellhouse.txt
+/gameFiles/puzzles/nicholashouse.txt
