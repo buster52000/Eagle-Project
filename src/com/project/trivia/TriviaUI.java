@@ -34,10 +34,11 @@ public class TriviaUI extends JFrame implements ActionListener {
 	private JLabel lblSigalMuseum, lblA, lblB, lblC, lblD, lblQuest, lblPic;
 	private JButton btnSubmit, btnMainMenu;
 	private JRadioButton rdbtnA, rdbtnB, rdbtnC, rdbtnD;
-	private ImageIcon ico;
-	private Trivia currentTrivia;
+	private ImageIcon nextIco;
+	private Trivia currentTrivia, nextTrivia;
+	private ArrayList<String> nextTriviaAns;
 	private int numHidden;
-	private boolean exit;
+	private boolean exit, nextTriviaLoaded;
 	private ButtonGroup group;
 
 	private String selectedTxt;
@@ -47,8 +48,10 @@ public class TriviaUI extends JFrame implements ActionListener {
 		exit = false;
 		numHidden = 0;
 		selectedTxt = "";
-		ico = null;
+		nextIco = null;
 		currentTrivia = null;
+		nextTriviaAns = new ArrayList<String>();
+		nextTriviaLoaded = false;
 
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -335,21 +338,37 @@ public class TriviaUI extends JFrame implements ActionListener {
 		return btnMainMenu;
 	}
 
-	public void nextTrivia(Trivia trivia, BufferedImage image) {
+	public void prepNextTrivia(Trivia trivia, BufferedImage image) {
+		nextTrivia = trivia;
+		nextIco = new ImageIcon(image);
+		nextTriviaAns = new ArrayList<String>();
+		for(String s : trivia.getAnswers())
+			nextTriviaAns.add(s);
+		Collections.shuffle(nextTriviaAns);
+		nextTriviaLoaded = true;
+	}
+	
+	public void nextTrivia() {
+		if(!nextTriviaLoaded) {
+			Main.errMsg("TriviaUI.nextTrivia called before trivia loaded", false);
+			return;
+		}
+		nextTriviaLoaded = false;
 		exit = false;
 		numHidden = 0;
-		currentTrivia = trivia;
+		currentTrivia = nextTrivia;
 		group.clearSelection();
-		lblQuest.setText(trivia.getQuestion());
-		ArrayList<String> temp = new ArrayList<String>();
-		for (String s : trivia.getAnswers()) {
-			temp.add(s);
-		}
-		Collections.shuffle(temp);
-		lblA.setText(temp.get(0));
-		lblB.setText(temp.get(1));
-		lblC.setText(temp.get(2));
-		lblD.setText(temp.get(3));
+		lblQuest.setText(currentTrivia.getQuestion());
+//		ArrayList<String> temp = new ArrayList<String>();
+//		for (String s : trivia.getAnswers()) {
+//			temp.add(s);
+//		}
+//		Collections.shuffle(temp);
+		lblPic.setIcon(nextIco);
+		lblA.setText(nextTriviaAns.get(0));
+		lblB.setText(nextTriviaAns.get(1));
+		lblC.setText(nextTriviaAns.get(2));
+		lblD.setText(nextTriviaAns.get(3));
 		lblA.setForeground(Color.WHITE);
 		lblB.setForeground(Color.WHITE);
 		lblC.setForeground(Color.WHITE);
@@ -363,8 +382,7 @@ public class TriviaUI extends JFrame implements ActionListener {
 		rdbtnB.setEnabled(true);
 		rdbtnC.setEnabled(true);
 		rdbtnD.setEnabled(true);
-		ico = new ImageIcon(image);
-		lblPic.setIcon(ico);
+//		ImageIcon ico = new ImageIcon(image);
 		repaint();
 		setVisible(true);
 		requestFocusInWindow();
@@ -427,9 +445,9 @@ public class TriviaUI extends JFrame implements ActionListener {
 	}
 
 	public void displayCorrect() {
-		BaseUtils.displayResult(lblPic, "/gameFiles/pics/checkMark.png", "/gameFiles/sounds/correct.wav");
 		group.clearSelection();
-		repaint();
+		BaseUtils.displayResult(lblPic, "/gameFiles/pics/checkMark.png", "/gameFiles/sounds/correct.wav");
+//		repaint();
 	}
 
 	public void displayWrong() {

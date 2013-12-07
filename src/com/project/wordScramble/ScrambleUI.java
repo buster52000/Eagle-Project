@@ -45,7 +45,7 @@ public abstract class ScrambleUI extends JFrame {
 	private Scramble currentScramble, nextScramble;
 	private BufferedImage currentImage, nextImage;
 	private Random rand;
-	
+
 	public static final String spaceChar = "~"; // •
 
 	public ScrambleUI() {
@@ -405,37 +405,53 @@ public abstract class ScrambleUI extends JFrame {
 		if (unused.size() > 0) {
 			hint = unused.get(rand.nextInt(unused.size()));
 			strHint = String.valueOf(currentScramble.getWord().charAt(hint));
+			boolean found = false;
 			for (JLabel l : scrambleLabels) {
 				if (l.getText().equalsIgnoreCase(strHint)) {
 					answerLabels.get(hint).setText(strHint.toUpperCase());
 					l.setText("");
-					l.repaint();
-					answerLabels.get(hint).repaint();
+					repaint();
 					inputCaptured();
+					found = true;
 					return;
 				}
 			}
-			char [] answerChars = currentScramble.getWord().toCharArray();
-			ArrayList<Integer> incorrect = new ArrayList<Integer>();
-			for(int i = 0; i < answerChars.length; i++) {
-				char ansTxt = answerLabels.get(i).getText().length() == 1 ? answerLabels.get(i).getText().charAt(0) : '$';
-				char cTxt = answerChars[i];
-				if(cTxt == ' ')
-					cTxt = spaceChar.charAt(0);
-				if(ansTxt != '$' && ansTxt != cTxt) {
-					incorrect.add(i);
+			if (!found) {
+				String cAns = "";
+				for (JLabel l : answerLabels) {
+					if (l == null) {
+						throw new NullPointerException("Scramble Label is null - ScrambleUI.hint()");
+					} else if (l.getText().equals("") || l.getText() == null)
+						cAns += spaceChar;
+					else if (l.getText().equals(spaceChar))
+						cAns += " ";
+					else
+						cAns += l.getText();
 				}
-//				if(!answerLabels.get(i).getText().equals("") && !(answerLabels.get(i).getText().equals(answerChars[i]) || (answerLabels.get(i).getText().equals(spaceChar) && answerChars[i] == ' '))) {
-//					incorrect.add(i);
-//				}
-			}
-			int wrong = incorrect.get(rand.nextInt(incorrect.size()));
-			for(JLabel l : scrambleLabels) {
-				if(l.getText().equals("")) {
-					l.setText(answerLabels.get(wrong).getText());
-					answerLabels.get(wrong).setText("");
-					inputCaptured();
+				char[] cAnsArr = cAns.toUpperCase().toCharArray();
+				char[] correctAns = currentScramble.getWord().toCharArray();
+				if (cAnsArr.length != correctAns.length) {
+					Main.errMsg("ScrambleUI.hint() - unmatching arr lengths when looking for incorrect letters", false);
 					return;
+				}
+				ArrayList<Integer> incorrectLetters = new ArrayList<Integer>();
+				for (int i = 0; i < cAnsArr.length; i++)
+					if (cAnsArr[i] != spaceChar.charAt(0))
+						if (cAnsArr[i] != correctAns[i])
+							incorrectLetters.add(i);
+				if (incorrectLetters.size() > 0) {
+					int incHint = incorrectLetters.get(rand.nextInt(incorrectLetters.size()));
+					int index = -1;
+					for (int i = 0; i < scrambleLabels.size(); i++)
+						if (scrambleLabels.get(i).getText().equals("") && index == -1)
+							index = i;
+					if (index == -1) {
+						Main.errMsg("Unable to find unused scramble box", false);
+						return;
+					}
+					scrambleLabels.get(index).setText(answerLabels.get(incHint).getText());
+					answerLabels.get(incHint).setText("");
+					repaint();
 				}
 			}
 		}
@@ -480,7 +496,7 @@ public abstract class ScrambleUI extends JFrame {
 		currentText = "";
 		for (JLabel l : answerLabels) {
 			if (l == null) {
-				throw new NullPointerException("Scramble JLabel is null");
+				throw new NullPointerException("Scramble JLabel is null - ScrambleUI.refreshCurrentText()");
 			}
 			if (l.getText() == null) {
 				l.setText("");
