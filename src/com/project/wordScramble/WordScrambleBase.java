@@ -50,6 +50,7 @@ public class WordScrambleBase {
 					@Override
 					public void run() {
 						BaseUtils.showDescriptionDialog(currentScramble.getDescription(), currentImage, currentScramble.getWord());
+						scrambleLoaded = false;
 						nextScramble();
 					}
 				});
@@ -165,6 +166,7 @@ public class WordScrambleBase {
 		if (!ui.isPreped())
 			ui.prepScramble(currentScramble, currentImage);
 		ui.nextScramble();
+		hintTimer.startOrRestartCountdown(HINT_WAIT_TIME);
 		prepNextScramble();
 	}
 
