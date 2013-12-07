@@ -7,14 +7,14 @@ import java.util.List;
 
 class PuzzleModel {
 	//private member data
-	private int[] xIntervals, yIntervals; 
+	private double[] xIntervals, yIntervals; 
 	private BufferedImage[][] pieces;
 	private BufferedImage image;
 	
 	private int xPieces, yPieces;
 	private Point[][] centers;
 	
-	public PuzzleModel(int xSize, int ySize, BufferedImage pieces[][], Point centers[][], int xIntervals[], int yIntervals[], BufferedImage image) {
+	public PuzzleModel(int xSize, int ySize, BufferedImage pieces[][], Point centers[][], double xIntervals[], double yIntervals[], BufferedImage image) {
 		this.xPieces = xSize;
 		this.yPieces = ySize;
 		this.pieces = pieces;
@@ -29,8 +29,8 @@ class PuzzleModel {
 	public int getYPieces() {return yPieces;}
 	public BufferedImage getPiece(int x, int y) {return pieces[x][y];}
 	public Point getCenter(int x, int y) {return centers[x][y];}
-	public int getXInterval(int x) {return xIntervals[x];}
-	public int getYInterval(int x) {return yIntervals[x];}
+	public double getXInterval(int x) {return xIntervals[x];}
+	public double getYInterval(int x) {return yIntervals[x];}
 	public BufferedImage getOriginalImage() {return image;}
 
 

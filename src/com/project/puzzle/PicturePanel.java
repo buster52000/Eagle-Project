@@ -14,11 +14,13 @@ import javax.swing.JPanel;
 public class PicturePanel extends JPanel {
 
 	private Image img;
-	private int pMouseX, pMouseY;
+	private int pMouseX, pMouseY, pieceX, pieceY;
 	private Set<PicturePanel> neighbors;
 	private Point center;
 
-	public PicturePanel(BufferedImage image) {
+	public PicturePanel(BufferedImage image, int pieceX, int pieceY) {
+		this.pieceX = pieceX;
+		this.pieceY = pieceY;
 		center = new Point(0, 0);
 		img = image;
 		neighbors = new HashSet<PicturePanel>();
@@ -66,8 +68,8 @@ public class PicturePanel extends JPanel {
 		super.setLocation(p);
 	}
 
-	public void addNeighbor(PicturePanel p) {
-		neighbors.add(p);
+	public boolean addNeighbor(PicturePanel p) {
+		return neighbors.add(p);
 	}
 
 	public boolean isNeighbor(PicturePanel p) {
@@ -104,4 +106,10 @@ public class PicturePanel extends JPanel {
 		return pMouseY;
 	}
 
+	public int getPieceX() {return pieceX;}
+	public int getPieceY() {return pieceY;}
+	
+	public String toString() {
+		return Integer.toString(pieceX)+"|"+Integer.toString(pieceY);
+	}
 }

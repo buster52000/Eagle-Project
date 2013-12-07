@@ -2,6 +2,7 @@ package com.project.puzzle;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,6 +13,7 @@ import java.awt.image.BufferedImage;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
 import com.project.base.BaseUtils;
@@ -36,14 +38,16 @@ import java.util.Set;
 @SuppressWarnings("serial")
 public abstract class PuzzleUI extends JFrame {
 
+	private static int PROXIMITY = Main.test ? 100 : 10;
+	
 	private JPanel contentPane, puzzlePanel, buttonPanel;
 	private PicturePanel[][] piecePanels;
 	private JLabel lblSigalMuseum, lblItemName;
 	private JButton btnMenu, btnRestart;
-	private final int puzzlePanelWidth, puzzlePanelHeight;
+	private int puzzlePanelWidth, puzzlePanelHeight;
 	private MouseMotionListener mouseMotionListener;
 	private MouseListener mouseListener;
-	private boolean exit;
+	private boolean exit, firstEntry=true;
 	private PuzzleModel puzzle;
 
 	public PuzzleUI() {
@@ -163,10 +167,13 @@ public abstract class PuzzleUI extends JFrame {
 			@Override
 			public void mouseDragged(MouseEvent e) {
 				try {
-					int x = (int) puzzlePanel.getMousePosition().getX();
-					int y = (int) puzzlePanel.getMousePosition().getY();
-					PicturePanel panel = (PicturePanel) e.getComponent();
-					panel.setLoc(x - panel.getPicMouseX(), y - panel.getPicMouseY(), new ArrayList<PicturePanel>());
+					Point p = puzzlePanel.getMousePosition();
+					if (p != null) {
+						int x = (int) p.getX();
+						int y = (int) p.getY();
+						PicturePanel panel = (PicturePanel) e.getComponent();
+						panel.setLoc(x - panel.getPicMouseX(), y - panel.getPicMouseY(), new ArrayList<PicturePanel>());
+					}
 				} catch (NullPointerException e1) {
 					Main.errMsg("Unable to get mouse position", false);
 					Main.saveStackTrace(e1);
@@ -175,7 +182,8 @@ public abstract class PuzzleUI extends JFrame {
 		};
 		
 		mouseListener = new MouseListener() {
-
+			private int numNeighborsBeforeMove;
+			
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 
@@ -195,16 +203,38 @@ public abstract class PuzzleUI extends JFrame {
 			public void mousePressed(MouseEvent e) {
 				PicturePanel p = (PicturePanel) e.getComponent();
 				p.setPicMouse(e.getX(), e.getY());
+				synchronized (this) {
+					numNeighborsBeforeMove = getNeighborhood(p).size();
+				}
 			}
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				PicturePanel p = (PicturePanel) e.getSource();
-				Set<PicturePanel> extendedNeighbors = new HashSet<PicturePanel>();
-				for(PicturePanel panel : p.getExtendedNeighbors(extendedNeighbors)) {
-					checkNear(panel, puzzle);
+				int numAfter = -1, numBefore = -1;
+				synchronized (this) {
+					numBefore = numNeighborsBeforeMove;
+					numAfter = calcNewNeighborhood((PicturePanel) e.getSource()).size();
 				}
-				if (extendedNeighbors.size() == puzzle.getXPieces() * puzzle.getYPieces()) {
+				if (numAfter > numBefore) {
+					BaseUtils.playClick();
+					if (numAfter == puzzle.getXPieces() * puzzle.getYPieces()) {
+						SwingUtilities.invokeLater(new Runnable() {
+							@Override
+							public void run() {
+								try {
+									Thread.sleep(1000);
+								} catch (InterruptedException e1) {
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								}
+								complete();
+							}
+						});
+					}
+				} else if (numAfter == puzzle.getXPieces() * puzzle.getYPieces()) {
+					// there's still a case I haven't found yet where we get here after the puzzle has already
+					// been completed.  So, let's make sure we notice completion in this case too...
+					Main.infoMsg("Found puzzle done by the unexpected route");
 					complete();
 				}
 			}
@@ -228,7 +258,7 @@ public abstract class PuzzleUI extends JFrame {
 		for (int picX = 0; picX < puzzle.getXPieces(); picX++) {
 			for (int picY = 0; picY < puzzle.getYPieces(); picY++) {
 				BufferedImage b = puzzle.getPiece(picX, picY);
-				PicturePanel p = new PicturePanel(b);
+				PicturePanel p = new PicturePanel(b, picX, picY);
 				p.setCenter(puzzle.getCenter(picX, picY));
 				p.setSize(b.getWidth(), b.getHeight());
 				p.setMinimumSize(new Dimension(b.getWidth(), b.getHeight()));
@@ -239,112 +269,218 @@ public abstract class PuzzleUI extends JFrame {
 			}
 		}
 
-		Random rand = Main.test ? new Random(3) : new Random();
-		
-		if (!Main.test) {
-			for (int i = 0; i < puzzle.getXPieces(); i++) {
-				for (int j = 0; j < puzzle.getYPieces(); j++) {
-					int randX = rand.nextInt(puzzlePanelWidth - piecePanels[i][j].getWidth());
-					int randY = rand.nextInt(puzzlePanelHeight - piecePanels[i][j].getHeight());
-					piecePanels[i][j].setLocation(randX, randY);
-					puzzlePanel.add(piecePanels[i][j]);
-				}
-			}
-
-		} else {
-			int currentX = (int) piecePanels[0][0].getCenter().getX();
-			int currentY = (int) piecePanels[0][0].getCenter().getY();
-			for (int j = 0; j < puzzle.getXPieces(); j++) {
-				for (int k = 0; k < puzzle.getYPieces(); k++) {
-					PicturePanel p = piecePanels[j][k];
-					p.setLocationWithCenter(currentX, currentY);
-					if (k < puzzle.getYPieces()-1)
-						currentY += puzzle.getYInterval(k);
-					puzzlePanel.add(p);
-				}
-				currentY = (int) piecePanels[j][0].getCenter().getY();
-				if (j < puzzle.getXPieces()-1)
-					currentX += puzzle.getXInterval(j);
-			}
+		// we're doing some ugly stuff here!  The following sequence was found to work cross-platform only after a lot of trial and error, so be careful about changes!
+		// I'm not sure exaclty which parts are platform-specific, but to cleanly grab the correct puzzlePanelHeight, this was the combination that 
+		// was found to work.
+		repaint();
+		setVisible(true);
+		if (firstEntry) {
+			int contentHeight = contentPane.getHeight();
+			int puzzleUIHeight = getHeight();
+			// for some strange reason (at least on Mac), this line returns a different value (0) than the following line!?!?
+			// puzzlePanelHeight = getHeight() - contentPane.getHeight();
+			puzzlePanelHeight = puzzleUIHeight - contentHeight;
+			Main.infoMsg("Recalculated panel height: "+puzzlePanelHeight);
+			firstEntry = false;
 		}
 
-		if (Main.test) {
+		setupPuzzlePanel();
+	}
+
+	public void setupPuzzlePanel(final int i, final int j, final Random rand) {
+		int randX = rand.nextInt(puzzlePanelWidth - piecePanels[i][j].getWidth());
+		int randY = rand.nextInt(puzzlePanelHeight - piecePanels[i][j].getHeight());
+		piecePanels[i][j].setLocation(randX, randY);
+		puzzlePanel.add(piecePanels[i][j]);
+		
+		try {
+			repaint();
+			BaseUtils.playClick();
+			Thread.sleep(60);
+		} catch (InterruptedException ie) {
+			// TODO Auto-generated catch block
+			ie.printStackTrace();
+		}
+		
+		final int nextJ = j+1 == puzzle.getYPieces() ? 0 : j+1;
+		final int nextI = nextJ == 0 ? (i+1 == puzzle.getXPieces() ? 0 : i+1) : i;
+		if (nextJ == 0 && nextI == 0) {
+			// all done the pieces -- finish up
+
+			// call repaint once more to make sure everything's displayed
+			repaint();
+			setVisible(true);
+
+			Main.infoMsg("done all puzzle prep work");
+			return;
+		} else {
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					setupPuzzlePanel(nextI, nextJ, rand);
+				}
+			});
+		}
+	}
+	
+	public void setupTestPuzzlePanel(final int i, final int j, final Random rand) {
+		int currentX = (int) piecePanels[0][0].getCenter().getX();
+		int currentY = (int) piecePanels[0][0].getCenter().getY();
+		boolean done = false;
+		for (int ii = 0; !done && ii < puzzle.getXPieces(); ii++) {
+			for (int jj = 0; !done && jj < puzzle.getYPieces(); jj++) {
+				PicturePanel p = piecePanels[ii][jj];
+				p.setLocationWithCenter(currentX, currentY);
+				if (jj < puzzle.getYPieces()-1)
+					currentY += puzzle.getYInterval(jj);
+				if (ii == i && jj == j) {
+					puzzlePanel.add(p);
+					done = true;
+				}
+			}
+			currentY = (int) piecePanels[ii][0].getCenter().getY();
+			if (ii < puzzle.getXPieces()-1)
+				currentX += puzzle.getXInterval(ii);
+		}
+		
+		try {
+			repaint();
+			BaseUtils.playClick();
+			Thread.sleep(60);
+		} catch (InterruptedException ie) {
+			// TODO Auto-generated catch block
+			ie.printStackTrace();
+		}
+		
+		final int nextJ = j+1 == puzzle.getYPieces() ? 0 : j+1;
+		final int nextI = nextJ == 0 ? (i+1 == puzzle.getXPieces() ? 0 : i+1) : i;
+		if (nextJ == 0 && nextI == 0) {
+			// all done the pieces -- finish up
+
 			// in order to make sure the puzzle area is as expected, let's put a big red background there for testing!
-			// there will be a 10pixel black border around it...
+			// there will be a 10pixel yellow border around it...
 			JPanel p = new JPanel();
 			p.setBounds(10, 10, puzzlePanelWidth-20, puzzlePanelHeight-20);
 			p.setSize(puzzlePanelWidth-20, puzzlePanelHeight-20);
 			p.setBackground(Color.RED);
 			puzzlePanel.add(p);
+			p = new JPanel();
+			p.setBounds(0, 0, puzzlePanelWidth, puzzlePanelHeight);
+			p.setSize(puzzlePanelWidth, puzzlePanelHeight);
+			p.setBackground(Color.YELLOW);
+			puzzlePanel.add(p);
 			
-			//TODO: this makes it easy to see that there's still an occasional piece that's partially off-screen
-			// ... it doesn't seem to hurt anything, but I'd rather it didn't happen -- as long as it keeps happening, I'm a
-			// little worried that a piece may start completely off the panel (making it impossible to complete the puzzle!)
+			// call repaint once more to make sure everything's displayed
+			repaint();
+			setVisible(true);
+
+			Main.infoMsg("done all puzzle prep work");
+			return;
+		} else {
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					setupTestPuzzlePanel(nextI, nextJ, rand);
+				}
+			});
 		}
-		
-		repaint();
-		setVisible(true);
-		requestFocus();
-
-		Main.infoMsg("done all puzzle prep work");
 	}
-
+	
+	public void setupPuzzlePanel() {
+		Main.infoMsg("Setting up puzzlePanel");
+		
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				if (Main.test) setupTestPuzzlePanel(0, 0, new Random(3));
+				else setupPuzzlePanel(0, 0, new Random());
+			}
+		});
+		
+	}
+	
 	public void displayCorrect() {
 		BaseUtils.displayResult(null, "doesn't/matter/here", "/gameFiles/sounds/correct.wav");
 	}
 
 	
-	private int PROXIMITY = Main.test ? 100 : 10;
+	public Set<PicturePanel> getNeighborhood(PicturePanel p) {
+		return p.getExtendedNeighbors(new HashSet<PicturePanel>());
+	}
 	
-	public void checkNear(PicturePanel p, PuzzleModel puzzle) {
-		int x = 0;
-		int y = 0;
-		for (int i = 0; i < piecePanels.length; i++)
-			for (int j = 0; j < piecePanels[i].length; j++)
-				if (p == piecePanels[i][j]) {
-					x = i;
-					y = j;
-				}
+	public Set<PicturePanel> calcNewNeighborhood(PicturePanel p) {
+		Set<PicturePanel> neighbors = null;
+		checkNear(p, puzzle);
+		boolean foundSomething = true;
+		while (foundSomething) {
+			foundSomething = false;
+			neighbors = new HashSet<PicturePanel>();
+			for(PicturePanel panel : p.getExtendedNeighbors(neighbors)) {
+				foundSomething |= checkNear(panel, puzzle);
+			}
+		}
+		return neighbors;
+	}
+	
+	private boolean checkNear(PicturePanel p, PuzzleModel puzzle) {
+		boolean foundNewNeighbor = false;
+		int x = p.getPieceX();
+		int y = p.getPieceY();
+		double px = p.getCenter().getX() + p.getX();
+		double py = p.getCenter().getY() + p.getY();
 		if (x > 0) {
-			PicturePanel min1 = piecePanels[x - 1][y];
-			if (min1.getCenter().getY() + min1.getY() < p.getCenter().getY() + p.getY() + PROXIMITY && min1.getCenter().getY() + min1.getY() > p.getCenter().getY() + p.getY() - PROXIMITY && min1.getCenter().getX() + min1.getX() < p.getCenter().getX() + p.getX() - puzzle.getXInterval(x - 1) + PROXIMITY && min1.getCenter().getX() + min1.getX() > p.getCenter().getX() + p.getX() - puzzle.getXInterval(x - 1) - PROXIMITY) {
-				p.setLocationWithCenter((int) (min1.getX() + min1.getCenter().getX() + puzzle.getXInterval(x - 1)), (int) (min1.getY() + min1.getCenter().y));
-				if (!p.isNeighbor(min1)) {
-					p.addNeighbor(min1);
-					min1.addNeighbor(p);
+			PicturePanel neighbor = piecePanels[x - 1][y];
+			double interval = puzzle.getXInterval(x - 1);
+			double nx = neighbor.getCenter().getX() + neighbor.getX();
+			double ny = neighbor.getCenter().getY() + neighbor.getY();
+			if (ny < py + PROXIMITY && ny > py - PROXIMITY && nx < px - interval + PROXIMITY && nx > px - interval - PROXIMITY) {
+				p.setLocationWithCenter((int) (nx + interval + 0.5), (int) ny);
+				if (p.addNeighbor(neighbor)) {
+					neighbor.addNeighbor(p);
+					foundNewNeighbor = true;
 				}
 			}
 		}
 		if (x < piecePanels.length - 1) {
-			PicturePanel plus1 = piecePanels[x + 1][y];
-			if (plus1.getCenter().y + plus1.getY() < p.getCenter().y + p.getY() + PROXIMITY && plus1.getCenter().y + plus1.getY() > p.getCenter().y + p.getY() - PROXIMITY && plus1.getCenter().x + plus1.getX() < p.getCenter().x + p.getX() + puzzle.getXInterval(x) + PROXIMITY && plus1.getCenter().x + plus1.getX() > p.getCenter().x + p.getX() + puzzle.getXInterval(x) - PROXIMITY) {
-				p.setLocationWithCenter((int) (plus1.getX() + plus1.getCenter().x - puzzle.getXInterval(x)), (int) (plus1.getY() + plus1.getCenter().y));
-				if (!p.isNeighbor(plus1)) {
-					p.addNeighbor(plus1);
-					plus1.addNeighbor(p);
+			PicturePanel neighbor = piecePanels[x + 1][y];
+			double interval = puzzle.getXInterval(x);
+			double nx = neighbor.getCenter().getX() + neighbor.getX();
+			double ny = neighbor.getCenter().getY() + neighbor.getY();
+			if (ny < py + PROXIMITY && ny > py - PROXIMITY && nx < px + interval + PROXIMITY && nx > px + interval - PROXIMITY) {
+				p.setLocationWithCenter((int) (nx - interval + 0.5), (int) ny);
+				if (p.addNeighbor(neighbor)) {
+					neighbor.addNeighbor(p);
+					foundNewNeighbor = true;
 				}
 			}
 		}
 		if (y > 0) {
-			PicturePanel min1 = piecePanels[x][y - 1];
-			if (min1.getCenter().x + min1.getX() < p.getCenter().x + p.getX() + PROXIMITY && min1.getCenter().x + min1.getX() > p.getCenter().x + p.getX() - PROXIMITY && min1.getCenter().y + min1.getY() < p.getCenter().y + p.getY() - puzzle.getYInterval(y - 1) + PROXIMITY && min1.getCenter().y + min1.getY() > p.getCenter().getY() - puzzle.getYInterval(y - 1) - PROXIMITY) {
-				p.setLocationWithCenter((int) (min1.getX() + min1.getCenter().x), (int) (min1.getY() + min1.getCenter().y + puzzle.getYInterval(y - 1)));
-				if (!p.isNeighbor(min1)) {
-					p.addNeighbor(min1);
-					min1.addNeighbor(p);
+			PicturePanel neighbor = piecePanels[x][y - 1];
+			double interval = puzzle.getYInterval(y - 1);
+			double nx = neighbor.getCenter().getX() + neighbor.getX();
+			double ny = neighbor.getCenter().getY() + neighbor.getY();
+			if (nx < px + PROXIMITY && nx > px - PROXIMITY && ny < py - interval + PROXIMITY && ny > py - interval - PROXIMITY) {
+				p.setLocationWithCenter((int) nx, (int) (ny + interval + 0.5));
+				if (p.addNeighbor(neighbor)) {
+					neighbor.addNeighbor(p);
+					foundNewNeighbor = true;
 				}
 			}
 		}
 		if (y < piecePanels[0].length - 1) {
-			PicturePanel plus1 = piecePanels[x][y + 1];
-			if (plus1.getCenter().x + plus1.getX() < p.getCenter().x + p.getX() + PROXIMITY && plus1.getCenter().x + plus1.getX() > p.getCenter().x + p.getX() - PROXIMITY && plus1.getCenter().y + plus1.getY() < p.getCenter().y + p.getY() + puzzle.getYInterval(y) + PROXIMITY && plus1.getCenter().y + plus1.getY() > p.getCenter().y + p.getY() + puzzle.getYInterval(y) - PROXIMITY) {
-				p.setLocationWithCenter((int) (plus1.getX() + plus1.getCenter().x), (int) (plus1.getY() + plus1.getCenter().y - puzzle.getYInterval(y)));
-				if (!p.isNeighbor(plus1)) {
-					p.addNeighbor(plus1);
-					plus1.addNeighbor(p);
+			PicturePanel neighbor = piecePanels[x][y + 1];
+			double interval = puzzle.getYInterval(y);
+			double nx = neighbor.getCenter().getX() + neighbor.getX();
+			double ny = neighbor.getCenter().getY() + neighbor.getY();
+			if (nx < px + PROXIMITY && nx > px - PROXIMITY && ny < py + interval + PROXIMITY && ny > py + interval - PROXIMITY) {
+				p.setLocationWithCenter((int) nx, (int) (ny - interval + 0.5));
+				if (p.addNeighbor(neighbor)) {
+					neighbor.addNeighbor(p);
+					foundNewNeighbor = true;
 				}
 			}
 		}
+		return foundNewNeighbor;
 	}
 
 	public boolean exit() {

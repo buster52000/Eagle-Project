@@ -5,8 +5,10 @@ import java.util.TimerTask;
 
 public abstract class FutureAction {
 	private Timer timer;
-
-	public FutureAction() {
+	private String name;
+	
+	public FutureAction(String name) {
+		this.name = name;
 	}
 
 	public void startOrRestartCountdown(int activationTimeInMilliseconds) {
@@ -30,7 +32,7 @@ public abstract class FutureAction {
 			};
 
 			boolean isDaemon = true;
-			timer = new Timer(isDaemon);
+			timer = new Timer(name, isDaemon);
 			timer.schedule(task, activationTimeInMilliseconds);
 		}
 	}

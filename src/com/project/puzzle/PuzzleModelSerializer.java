@@ -91,10 +91,10 @@ public class PuzzleModelSerializer {
 			}
 			
 			for (int y = 0; y < d.getYPieces()-1; y++) {
-				dos.writeInt(d.getYInterval(y));
+				dos.writeDouble(d.getYInterval(y));
 			}
 			for (int x = 0; x < d.getXPieces()-1; x++) {
-				dos.writeInt(d.getXInterval(x));
+				dos.writeDouble(d.getXInterval(x));
 			}
 				
 		} catch (FileNotFoundException e) {
