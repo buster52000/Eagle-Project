@@ -161,6 +161,7 @@ public class WordScrambleBase {
 		currentScramble = nextScramble;
 		currentImage = nextImage;
 		scrambleLoaded = true;
+		nextScramblePreped = false;
 		if (!ui.isPreped())
 			ui.prepScramble(currentScramble, currentImage);
 		ui.nextScramble();

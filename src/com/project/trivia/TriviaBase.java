@@ -30,9 +30,9 @@ import com.project.base.Main;
 public class TriviaBase {
 
 	private List<Trivia> trivia;
-	private Trivia currentTrivia;
-	private BufferedImage currentImage;
-	private boolean triviaLoaded;
+	private Trivia currentTrivia, nextTrivia;
+	private BufferedImage currentImage, nextImage;
+	private boolean triviaLoaded, nextTriviaPreped, noMoreTrivia;
 	private TriviaUI ui;
 	private Timer timer;
 	private FutureAction endGameTimer;
@@ -42,6 +42,8 @@ public class TriviaBase {
 		currentTrivia = null;
 		currentImage = null;
 		triviaLoaded = false;
+		nextTriviaPreped = false;
+		noMoreTrivia = false;
 		ui = new TriviaUI();
 		timer = new Timer();
 
@@ -116,6 +118,13 @@ public class TriviaBase {
 		});
 	}
 
+	public void preloadFirst() {
+		triviaLoaded = false;
+		nextTriviaPreped = false;
+		noMoreTrivia = false;
+		prepTrivia();
+	}
+
 	public void playGame() {
 		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 		nextTrivia();
@@ -131,52 +140,72 @@ public class TriviaBase {
 		endGameTimer.cancel();
 	}
 
+	private void prepTrivia() {
+		if (nextTriviaPreped)
+			Main.infoMsg("prepTriva called when trivia is already preped");
+		if (trivia.size() > 0) {
+			Random rand = new Random();
+			int i = rand.nextInt(trivia.size());
+			nextTrivia = trivia.get(i);
+			nextImage = BaseUtils.loadImage(nextTrivia.getPicUrl(), BaseUI.PIC_WIDTH);
+			trivia.remove(i);
+			ui.prepNextTrivia(nextTrivia, nextImage);
+			nextTriviaPreped = true;
+		} else
+			noMoreTrivia = true;
+	}
+
 	private void nextTrivia() {
+
 		timer.cancel();
 		timer = new Timer();
-		if (trivia.size() > 0) {
-			if (triviaLoaded) {
+		if (!nextTriviaPreped && !noMoreTrivia)
+			prepTrivia();
+		if (!noMoreTrivia) {
+			if (triviaLoaded)
 				Main.errMsg("nextTrivia Called when triviaLoaded", false);
-				ui.gameOver();
-			} else {
-				Random rand = new Random();
-				int i = rand.nextInt(trivia.size());
-				currentTrivia = trivia.get(i);
-				currentImage = BaseUtils.loadImage(currentTrivia.getPicUrl(), BaseUI.PIC_WIDTH);
-				trivia.remove(i);
-				triviaLoaded = true;
-				ui.nextTrivia(currentTrivia, currentImage);
-				timer.schedule(new TimerTask() {
+			currentTrivia = nextTrivia;
+			currentImage = nextImage;
+			// Random rand = new Random();
+			// int i = rand.nextInt(trivia.size());
+			// currentTrivia = trivia.get(i);
+			// currentImage = BaseUtils.loadImage(currentTrivia.getPicUrl(),
+			// BaseUI.PIC_WIDTH);
+			// trivia.remove(i);
+			// ui.nextTrivia(currentTrivia, currentImage);
+			ui.nextTrivia();
+			prepTrivia();
+			triviaLoaded = true;
+			timer.schedule(new TimerTask() {
 
-					@Override
-					public void run() {
-						ui.hideNext();
-					}
-				}, 15000);
-				timer.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					ui.hideNext();
+				}
+			}, 15000);
+			timer.schedule(new TimerTask() {
 
-					@Override
-					public void run() {
-						ui.hideNext();
-					}
-				}, 25000);
-				timer.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					ui.hideNext();
+				}
+			}, 25000);
+			timer.schedule(new TimerTask() {
 
-					@Override
-					public void run() {
-						ui.hideNext();
-						ui.displayWrong();
-					}
-				}, 45000);
-				timer.schedule(new TimerTask() {
-					@Override
-					public void run() {
-						triviaLoaded = false;
-						BaseUtils.showDescriptionDialog(currentTrivia.getDescription(), currentImage, currentTrivia.getAnswers()[3]);
-						nextTrivia();
-					}
-				}, 50000);
-			}
+				@Override
+				public void run() {
+					ui.hideNext();
+					ui.displayWrong();
+				}
+			}, 45000);
+			timer.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					triviaLoaded = false;
+					BaseUtils.showDescriptionDialog(currentTrivia.getDescription(), currentImage, currentTrivia.getAnswers()[3]);
+					nextTrivia();
+				}
+			}, 50000);
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
 
@@ -190,14 +219,14 @@ public class TriviaBase {
 
 	public static List<Trivia> loadTrivia(String triviaListResource) {
 		List<Trivia> trivia = new ArrayList<Trivia>();
-		
+
 		// load any that are part of the resources
 		InputStream triviaList = TriviaBase.class.getResourceAsStream(triviaListResource);
 		if (triviaList == null) {
 			Main.errMsg("Couldn't open the trivia list as a resource", false);
 			return trivia; // even though it's empty!
 		}
-		
+
 		BufferedReader breader = new BufferedReader(new InputStreamReader(triviaList));
 		String line;
 		try {
@@ -205,11 +234,11 @@ public class TriviaBase {
 				String triviaName = line;
 				boolean stat = loadTriviaDescriptor(trivia, TriviaBase.class.getResourceAsStream(triviaName));
 				if (!stat) {
-					Main.errMsg("Failed to load trivia descriptor: "+triviaName, false);
+					Main.errMsg("Failed to load trivia descriptor: " + triviaName, false);
 				}
 			}
 		} catch (IOException e) {
-			// report problem, but continue 
+			// report problem, but continue
 			Main.errMsg("Error while loading the trivia list.  The set of available trivia may not be complete", false);
 		} finally {
 			try {
@@ -221,7 +250,7 @@ public class TriviaBase {
 		}
 
 		// load any extras at user.home
-		File dir = new File(System.getProperty("user.home")+System.getProperty("file.separator")+"gameFiles/trivia/");
+		File dir = new File(System.getProperty("user.home") + System.getProperty("file.separator") + "gameFiles/trivia/");
 		if (!dir.exists()) {
 			dir.mkdirs();
 			return trivia;
@@ -230,10 +259,10 @@ public class TriviaBase {
 		for (File f : files) {
 			boolean stat = loadTriviaDescriptor(trivia, f);
 			if (!stat) {
-				Main.errMsg("Failed to load trivia descriptor: "+f.getAbsolutePath(), false);
+				Main.errMsg("Failed to load trivia descriptor: " + f.getAbsolutePath(), false);
 			}
 		}
-		
+
 		return trivia;
 	}
 
@@ -250,7 +279,7 @@ public class TriviaBase {
 			answers[3] = read.readLine();
 			String description = read.readLine();
 			URL url = TriviaBase.class.getResource(picLoc);
-			Main.infoMsg("Registering trivia: "+picLoc);
+			Main.infoMsg("Registering trivia: " + picLoc);
 			trivia.add(new Trivia(url, question, answers, description));
 			return true;
 		} catch (FileNotFoundException e) {
@@ -266,12 +295,13 @@ public class TriviaBase {
 				if (read != null)
 					read.close();
 			} catch (IOException e) {
-				// not much to do in this case, but probably doesn't matter either
+				// not much to do in this case, but probably doesn't matter
+				// either
 				e.printStackTrace();
 			}
 		}
 	}
-	
+
 	private static boolean loadTriviaDescriptor(List<Trivia> trivia, File f) {
 		BufferedReader read = null;
 		try {
@@ -284,14 +314,14 @@ public class TriviaBase {
 			answers[2] = read.readLine();
 			answers[3] = read.readLine();
 			String description = read.readLine();
-			
+
 			File f2 = new File(picLoc);
 			if (f2.exists()) {
-				Main.infoMsg("Registering trivia: "+f2.getAbsolutePath());
+				Main.infoMsg("Registering trivia: " + f2.getAbsolutePath());
 				trivia.add(new Trivia(f2.toURI().toURL(), question, answers, description));
 				return true;
 			} else {
-				Main.errMsg("Trivia File not found: "+f2.getAbsolutePath(), false);
+				Main.errMsg("Trivia File not found: " + f2.getAbsolutePath(), false);
 				return false;
 			}
 		} catch (FileNotFoundException e) {
@@ -307,7 +337,8 @@ public class TriviaBase {
 				if (read != null)
 					read.close();
 			} catch (IOException e) {
-				// not much to do in this case, but probably doesn't matter either
+				// not much to do in this case, but probably doesn't matter
+				// either
 				e.printStackTrace();
 			}
 		}
