@@ -207,7 +207,7 @@ public class BaseUtils {
 		while (currentCharNum < str.length()) {
 			lastCharNum = currentCharNum;
 			currentCharNum += 90;
-			if (currentCharNum > str.length()) {
+			if (currentCharNum >= str.length()) {
 				descriptionLines.add(str.substring(lastCharNum));
 			} else {
 				while (str.charAt(currentCharNum) != ' ')

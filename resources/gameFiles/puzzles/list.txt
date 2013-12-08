@@ -7,3 +7,4 @@
 /gameFiles/puzzles/earlheldband.txt
 /gameFiles/puzzles/mixsellhouse.txt
 /gameFiles/puzzles/nicholashouse.txt
+/gameFiles/puzzles/palongrifle.txt

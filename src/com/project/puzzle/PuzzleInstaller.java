@@ -51,10 +51,15 @@ public class PuzzleInstaller {
 		int iw = img.getWidth(null);
 		int ih = img.getHeight(null);
 		
-		BufferedImage prescaledCurrentTemplate = copyBufferedImage(unscaledTemplate);
 		if (ih > iw) {
+			Main.infoMsg("Rotating template");
 			unscaledTemplate = createRotatedCopy(unscaledTemplate, Math.PI / 2);
 		}
+		
+		// haven't been able to figure out why this copy should be necessary!!  However, it seems that attempting to use 
+		// unscaledTemplate later in findCenter doesn't work... perhaps one of the intervening steps is unexpectedly
+		// changing the unscaledTemplate in some way that only findCenter cares.
+		BufferedImage hackExtraCopy = copyBufferedImage(unscaledTemplate); 
 		
 		if (Thread.currentThread().isInterrupted())
 			return null;
@@ -85,12 +90,6 @@ public class PuzzleInstaller {
 		for (int d = 0; d < yIntervals.length; d++) 
 			yIntervals[d] = yRedLoc[d + 1] - yRedLoc[d];
 
-		pieces = new BufferedImage[xPieces][yPieces];
-
-		double mX = (double) prescaledCurrentTemplate.getWidth() / (double) iw;
-		double mY = (double) prescaledCurrentTemplate.getHeight() / (double) ih;
-		centers = new Point[xPieces][yPieces];
-
 		Image scaledTemplateImage = unscaledTemplate.getScaledInstance(iw, ih, Image.SCALE_SMOOTH);
 		BufferedImage bufferedScaledTemplateImage = new BufferedImage(iw, ih, BufferedImage.TYPE_INT_ARGB);
 		bufferedScaledTemplateImage.getGraphics().drawImage(scaledTemplateImage, 0, 0, null);
@@ -100,6 +99,7 @@ public class PuzzleInstaller {
 		
 		int xStep = iw / xPieces;
 		int yStep = ih / yPieces;
+		pieces = new BufferedImage[xPieces][yPieces];
 		for (int j = 0, cY = yStep / 2; j < yPieces; j++, cY += yStep) {
 			for (int k = 0, cX = xStep / 2; k < xPieces; k++, cX += xStep) {
 				if (Thread.currentThread().isInterrupted())
@@ -108,13 +108,14 @@ public class PuzzleInstaller {
 			}
 		}
 
+		centers = new Point[xPieces][yPieces];
 		for (int j = 0; j < unscaledTemplateYLoc.size(); j++) {
 			for (int i = 0; i < unscaledTemplateXLoc.size(); i++) {
 				if (Thread.currentThread().isInterrupted())
 					return null;
 				int unscaledCenter[] = new int[2];
-				findCenter(unscaledTemplateXLoc.get(i), unscaledTemplateYLoc.get(j), prescaledCurrentTemplate, prescaledCurrentTemplate, unscaledCenter);
-				centers[i][j] = new Point((int) (unscaledCenter[0] / mX  + 0.5), (int) (unscaledCenter[1] / mY + 0.5));
+				findCenter(unscaledTemplateXLoc.get(i), unscaledTemplateYLoc.get(j), hackExtraCopy, unscaledCenter);
+				centers[i][j] = new Point((int) (unscaledCenter[0] * sW  + 0.5), (int) (unscaledCenter[1] * sH + 0.5));
 			}
 		}
 		
@@ -284,7 +285,7 @@ public class PuzzleInstaller {
 		int maxH = 1;
 		int maxW = 1;
 		int minW = width;
-		int minH = width;
+		int minH = template.getHeight(null);
 		for (int i = pixles.nextSetBit(0); i >= 0; i = pixles.nextSetBit(i+1)) {
 			int y = i / width;
 			int x = i - y*width;
@@ -307,7 +308,7 @@ public class PuzzleInstaller {
 		return image;
 	}
 
-	private void findCenter(int seedx, int seedy, BufferedImage template, BufferedImage image, int center[]) {
+	private void findCenter(int seedx, int seedy, BufferedImage template,int center[]) {
 		int width = template.getWidth();
 		BitSet pixles = fill(template, seedx, seedy, Color.GREEN);
 		int minW = template.getWidth();
@@ -318,7 +319,7 @@ public class PuzzleInstaller {
 			int x = i - y*width;
 			if (x < minW) minW = x;
 			if (y < minH) minH = y;
-			if (image.getRGB(x,y) == Color.RED.getRGB()) {
+			if (template.getRGB(x,y) == Color.RED.getRGB()) {
 				centerx = x;
 				centery = y;
 			}
