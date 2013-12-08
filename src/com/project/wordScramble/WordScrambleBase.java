@@ -26,11 +26,11 @@ import com.project.base.Main;
 
 public class WordScrambleBase {
 
-	private ScrambleUI ui;
+	private final ScrambleUI ui;
 	private List<Scramble> scrambles;
 	private FutureAction endGameTimer, hintTimer;
 	private Random rand;
-	private Scramble currentScramble, nextScramble;
+	private Scramble currentScrambleBase, nextScramble;
 	private BufferedImage currentImage, nextImage;
 	private boolean scrambleLoaded, nextScramblePreped, noMoreScrambles;
 
@@ -49,8 +49,10 @@ public class WordScrambleBase {
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {
-						BaseUtils.showDescriptionDialog(currentScramble.getDescription(), currentImage, currentScramble.getWord());
-						nextScramble();
+						hintTimer.cancel();
+						BaseUtils.showDescriptionDialog(currentScrambleBase.getDescription(), currentImage, currentScrambleBase.getWord());
+						scrambleLoaded = false;
+						nextScrambleBase();
 					}
 				});
 			}
@@ -77,7 +79,7 @@ public class WordScrambleBase {
 		};
 
 		rand = new Random();
-		currentScramble = null;
+		currentScrambleBase = null;
 		currentImage = null;
 
 		endGameTimer = new FutureAction("ScrambleInactivity") {
@@ -114,11 +116,11 @@ public class WordScrambleBase {
 		nextScramblePreped = false;
 		prepNextScramble();
 	}
-	
+
 	public void playGame() {
-		if(!ui.isPreped())
+		if (!ui.isPreped())
 			preloadFirst();
-		nextScramble();
+		nextScrambleBase();
 		endGameTimer.startOrRestartCountdown(GameController.END_GAME_AFTER_MILLI);
 		hintTimer.startOrRestartCountdown(HINT_WAIT_TIME);
 		synchronized (ui) {
@@ -130,8 +132,12 @@ public class WordScrambleBase {
 				}
 			}
 		}
+		noMoreScrambles = true;
+		BaseUtils.closeAllOpenJDialogs();
 		endGameTimer.cancel();
 		hintTimer.cancel();
+		ui.setVisible(false);
+		ui.dispose();
 	}
 
 	private void prepNextScramble() {
@@ -149,23 +155,30 @@ public class WordScrambleBase {
 		}
 	}
 
-	private void nextScramble() {
-		if(!nextScramblePreped && !noMoreScrambles)
+	private void nextScrambleBase() {
+		if (!nextScramblePreped && !noMoreScrambles)
 			prepNextScramble();
-		if(noMoreScrambles) {
+		if (noMoreScrambles) {
 			ui.gameOver();
 			return;
 		}
 		if (scrambleLoaded)
 			Main.errMsg("Scramble already loaded proceeding anyway", false);
-		currentScramble = nextScramble;
+		currentScrambleBase = nextScramble;
 		currentImage = nextImage;
 		scrambleLoaded = true;
 		nextScramblePreped = false;
 		if (!ui.isPreped())
-			ui.prepScramble(currentScramble, currentImage);
+			ui.prepScramble(currentScrambleBase, currentImage);
 		ui.nextScramble();
-		prepNextScramble();
+		hintTimer.startOrRestartCountdown(HINT_WAIT_TIME);
+		SwingUtilities.invokeLater(new Runnable() {
+			
+			@Override
+			public void run() {
+				prepNextScramble();
+			}
+		});
 	}
 
 	public static List<Scramble> loadScrambles(String scrambleListResource) {

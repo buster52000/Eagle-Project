@@ -1,6 +1,5 @@
 package com.project.base;
 
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -8,8 +7,6 @@ import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
-import javax.swing.JDialog;
-
 import com.project.puzzle.PuzzleBase;
 import com.project.trivia.TriviaBase;
 import com.project.wordScramble.WordScrambleBase;
@@ -38,7 +35,7 @@ public class GameController implements MouseMotionListener {
 			public void performAction() {
 				// will be called when the timeout triggers the screensaver
 				screensaverActivated = true;
-				closeAllOpenJDialogs();
+				BaseUtils.closeAllOpenJDialogs();
 				baseUI.showScreenSaver();
 			}
 
@@ -104,16 +101,6 @@ public class GameController implements MouseMotionListener {
 		}
 
 	}
-
-	public static void closeAllOpenJDialogs() {
-    	for (Window w : JDialog.getWindows()) {
-    		if ( w instanceof JDialog) {
-    			JDialog jd = (JDialog) w;
-    			Main.infoMsg("Forcibly closing JDialog \""+jd.getTitle()+"\"");
-    			jd.dispose();
-    		}
-    	}
-    }
 	
 	@Override
 	public void mouseDragged(MouseEvent e) {

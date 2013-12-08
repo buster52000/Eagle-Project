@@ -3,6 +3,7 @@ package com.project.base;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Image;
+import java.awt.Window;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -24,6 +25,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
@@ -251,5 +253,15 @@ public class BaseUtils {
 		playSoundEffect("/gameFiles/sounds/click.wav", 500, null); // review of softclick.wav in Audacity confirms that 50ms is it's duration
 		// callers should not call this function more frequently than about 30ms apart
 	}
+	
+	public static void closeAllOpenJDialogs() {
+    	for (Window w : JDialog.getWindows()) {
+    		if ( w instanceof JDialog) {
+    			JDialog jd = (JDialog) w;
+    			Main.infoMsg("Forcibly closing JDialog \""+jd.getTitle()+"\"");
+    			jd.dispose();
+    		}
+    	}
+    }
 
 }
