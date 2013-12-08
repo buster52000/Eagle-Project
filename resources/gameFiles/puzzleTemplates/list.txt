@@ -1,1 +1,2 @@
+/gameFiles/puzzleTemplates/template4.png
 /gameFiles/puzzleTemplates/template3.png

@@ -14,6 +14,7 @@ public class Main {
 
 	private static File logFile;
 	public static boolean test = false;
+	public static boolean noSleep = false;
 	public static boolean soundEffects = true;
 	public static boolean music = true;
 
@@ -45,6 +46,7 @@ public class Main {
 			if (test) {
 				soundEffects = false;
 				music = false;
+				noSleep = true;
 			}
 			
 			getLogFile(); // makes sure it's initialized
