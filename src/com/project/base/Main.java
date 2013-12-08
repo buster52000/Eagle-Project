@@ -51,6 +51,8 @@ public class Main {
 			
 			getLogFile(); // makes sure it's initialized
 			infoMsg("Program Started");
+			SleepControler sleepCont = new SleepControler();
+			sleepCont.setTimer();
 			GameController cont = new GameController();
 			if (cont.start()) {
 				infoMsg("Program Terminated Successfully");

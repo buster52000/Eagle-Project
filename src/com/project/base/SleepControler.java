@@ -11,10 +11,6 @@ import java.util.Calendar;
 public class SleepControler {
 
 	private FutureAction sleepTimer, wakeupTimer;
-	// private long[] openTimeSummer = { 39600000, -1, 36000000, 36000000, 36000000, 36000000, 32400000 };
-	// private long[] closeTimeSummer = { 57600000, -1, 57600000, 57600000, 57600000, 61200000, 57600000 };
-	// private long[] openTimeWinter = { 43200000, -1, -1, 36000000, 36000000, 36000000, 36000000 };
-	// private long[] closeTimeWinter = { 57600000, -1, -1, 57600000, 57600000, 61200000, 57600000 };
 	private long openTime = 28800000;
 	private long closeTime = 64800000;
 	private long oneDay = 86400000;
