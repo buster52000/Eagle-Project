@@ -132,8 +132,12 @@ public class WordScrambleBase {
 				}
 			}
 		}
+		noMoreScrambles = true;
+		BaseUtils.closeAllOpenJDialogs();
 		endGameTimer.cancel();
 		hintTimer.cancel();
+		ui.setVisible(false);
+		ui.dispose();
 	}
 
 	private void prepNextScramble() {
