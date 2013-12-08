@@ -426,7 +426,7 @@ public abstract class PuzzleUI extends JFrame {
 	}
 	
 	public void displayCorrect() {
-		BaseUtils.displayResult(null, "doesn't/matter/here", "/gameFiles/sounds/correct.wav");
+		BaseUtils.displayResult(null, "doesn't/matter/here", "/gameFiles/sounds/correct.wav", null);
 	}
 
 	

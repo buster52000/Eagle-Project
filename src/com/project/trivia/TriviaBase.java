@@ -83,15 +83,17 @@ public class TriviaBase {
 					if (currentTrivia != null) {
 						if (ui.getSelected().equals(currentTrivia.getAnswers()[3])) {
 							timer.cancel();
-							ui.displayCorrect();
-							triviaLoaded = false;
-							SwingUtilities.invokeLater(new Runnable() {
+							
+							final Runnable onCompletionAction = new Runnable() {
 								@Override
 								public void run() {
 									BaseUtils.showDescriptionDialog(currentTrivia.getDescription(), currentImage, currentTrivia.getAnswers()[3]);
 									nextTrivia();
 								}
-							});
+							};
+							
+							ui.displayCorrect(onCompletionAction);
+							triviaLoaded = false;
 						} else {
 							ui.displayWrong();
 						}

@@ -444,16 +444,20 @@ public class TriviaUI extends JFrame implements ActionListener {
 		}
 	}
 
-	public void displayCorrect() {
+	public void displayCorrect(final Runnable onCompletionAction) {
 		group.clearSelection();
-		BaseUtils.displayResult(lblPic, "/gameFiles/pics/checkMark.png", "/gameFiles/sounds/correct.wav");
-//		repaint();
+		BaseUtils.displayResult(lblPic, "/gameFiles/pics/checkMark.png", "/gameFiles/sounds/correct.wav", onCompletionAction);
 	}
 
 	public void displayWrong() {
-		BaseUtils.displayResult(lblPic, "/gameFiles/pics/xMark.png", "/gameFiles/sounds/wrong.wav");
-		group.clearSelection();
-		repaint();
+		final Runnable onCompletionAction = new Runnable() {
+			@Override
+			public void run() {
+				group.clearSelection();
+				repaint();
+			}
+		};
+		BaseUtils.displayResult(lblPic, "/gameFiles/pics/xMark.png", "/gameFiles/sounds/wrong.wav", onCompletionAction);
 	}
 
 	public JButton getSubmitButton() {

@@ -472,18 +472,23 @@ public abstract class ScrambleUI extends JFrame {
 		return currentText;
 	}
 
-	public void displayCorrect() {
-		BaseUtils.displayResult(lblPic, "/gameFiles/pics/checkMark.png", "/gameFiles/sounds/correct.wav");
-		repaint();
+	public void displayWrong() {
+		final Runnable onCompletionAction = new Runnable() {
+			@Override
+			public void run() {
+				repaint();
+				for (int i = 0; i < answerLabels.size(); i++) {
+					scrambleLabels.get(i).setText(answerLabels.get(i).getText());
+					answerLabels.get(i).setText("");
+				}
+			}
+		};
+		BaseUtils.displayResult(lblPic, "/gameFiles/pics/xMark.png", "/gameFiles/sounds/wrong.wav", onCompletionAction);
 	}
 
-	public void displayWrong() {
-		BaseUtils.displayResult(lblPic, "/gameFiles/pics/xMark.png", "/gameFiles/sounds/wrong.wav");
+	public void displayCorrect(final Runnable onCompletionAction) {
+		BaseUtils.displayResult(lblPic, "/gameFiles/pics/checkMark.png", "/gameFiles/sounds/correct.wav", onCompletionAction);
 		repaint();
-		for (int i = 0; i < answerLabels.size(); i++) {
-			scrambleLabels.get(i).setText(answerLabels.get(i).getText());
-			answerLabels.get(i).setText("");
-		}
 	}
 
 	private void refreshCurrentText() {

@@ -44,9 +44,7 @@ public class WordScrambleBase {
 			@Override
 			public void complete() {
 				scrambleLoaded = false;
-				ui.displayCorrect();
-
-				SwingUtilities.invokeLater(new Runnable() {
+				final Runnable onCompletionAction = new Runnable() {
 					@Override
 					public void run() {
 						hintTimer.cancel();
@@ -54,7 +52,8 @@ public class WordScrambleBase {
 						scrambleLoaded = false;
 						nextScrambleBase();
 					}
-				});
+				};
+				ui.displayCorrect(onCompletionAction);
 			}
 
 			@Override
