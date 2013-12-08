@@ -100,10 +100,15 @@ public abstract class PuzzleUI extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				// disable exit buttons; they'll either not be needed anymore or be re-enabled after the next puzzle is setup
+				btnMenu.setEnabled(false);
+				btnRestart.setEnabled(false);
+				
 				gameOver();
 			}
 		});
-
+		btnMenu.setEnabled(false);
+		
 		btnRestart = new JButton("Restart Puzzle");
 		GridBagConstraints gbc_btnRestart = new GridBagConstraints();
 		gbc_btnRestart.gridx = 1;
@@ -113,9 +118,14 @@ public abstract class PuzzleUI extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				// disable exit buttons; they'll either not be needed anymore or be re-enabled after the next puzzle is setup
+				btnMenu.setEnabled(false);
+				btnRestart.setEnabled(false);
+				
 				newPuzzle();
 			}
 		});
+		btnRestart.setEnabled(false);
 
 		lblSigalMuseum = new JLabel("Sigal Museum");
 		lblSigalMuseum.setForeground(Color.WHITE);
@@ -227,6 +237,11 @@ public abstract class PuzzleUI extends JFrame {
 									// TODO Auto-generated catch block
 									e1.printStackTrace();
 								}
+								
+								// disable exit buttons; they'll either not be needed anymore or be re-enabled after the next puzzle is setup
+								btnMenu.setEnabled(false);
+								btnRestart.setEnabled(false);
+								
 								complete();
 							}
 						});
@@ -235,6 +250,11 @@ public abstract class PuzzleUI extends JFrame {
 					// there's still a case I haven't found yet where we get here after the puzzle has already
 					// been completed.  So, let's make sure we notice completion in this case too...
 					Main.infoMsg("Found puzzle done by the unexpected route");
+
+					// disable exit buttons; they'll either not be needed anymore or be re-enabled after the next puzzle is setup
+					btnMenu.setEnabled(false);
+					btnRestart.setEnabled(false);
+					
 					complete();
 				}
 			}
@@ -288,8 +308,10 @@ public abstract class PuzzleUI extends JFrame {
 	}
 
 	public void setupPuzzlePanel(final int i, final int j, final Random rand) {
-		int randX = rand.nextInt(puzzlePanelWidth - piecePanels[i][j].getWidth());
-		int randY = rand.nextInt(puzzlePanelHeight - piecePanels[i][j].getHeight());
+		int xRange = puzzlePanelWidth - piecePanels[i][j].getWidth();
+		int yRange = puzzlePanelHeight - piecePanels[i][j].getHeight();
+		int randX = rand.nextInt(xRange);
+		int randY = rand.nextInt(yRange);
 		piecePanels[i][j].setLocation(randX, randY);
 		puzzlePanel.add(piecePanels[i][j]);
 		
@@ -312,6 +334,8 @@ public abstract class PuzzleUI extends JFrame {
 			setVisible(true);
 
 			Main.infoMsg("done all puzzle prep work");
+			btnMenu.setEnabled(true);
+			btnRestart.setEnabled(true);
 			return;
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {
@@ -375,6 +399,8 @@ public abstract class PuzzleUI extends JFrame {
 			setVisible(true);
 
 			Main.infoMsg("done all puzzle prep work");
+			btnMenu.setEnabled(true);
+			btnRestart.setEnabled(true);
 			return;
 		} else {
 			SwingUtilities.invokeLater(new Runnable() {

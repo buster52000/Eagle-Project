@@ -45,7 +45,7 @@ public class PuzzleInstaller {
 		// java - get screen size using the Toolkit class
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		int puzzleHeight = screenSize.height - 125; // 125 ~ the height of the stuff above the puzzle panel
-		puzzleHeight = (int) (puzzleHeight * 0.6); // leave some space so that the pieces can be spread out a bit
+		puzzleHeight = (int) (puzzleHeight * 0.7); // leave some space so that the pieces can be spread out a bit
 		img = BaseUtils.loadImage(imageUrl, puzzleHeight);
 		BufferedImage unscaledTemplate = BaseUtils.loadImage(templateUrl, Integer.MAX_VALUE);
 		int iw = img.getWidth(null);
@@ -53,6 +53,16 @@ public class PuzzleInstaller {
 		
 		if (ih > iw) {
 			Main.infoMsg("Rotating template");
+			
+			// since we're swapping ih and iw, let's reload the image with an adjusted height limit based on the width and the aspect ratio
+			// (note: don't just rescale the current unscaledTemplate 'cause it'd be more lossy than just reloading with an appropriate height limit)
+			int imageWidthLimit = puzzleHeight;
+			double aspectRatio = (double) iw / (double) ih;
+			int rotatedHeightLimit = (int) (imageWidthLimit * aspectRatio);
+			img = BaseUtils.loadImage(imageUrl, rotatedHeightLimit);
+			iw = img.getWidth(null);
+			ih = img.getHeight(null);
+			
 			unscaledTemplate = createRotatedCopy(unscaledTemplate, Math.PI / 2);
 		}
 		
