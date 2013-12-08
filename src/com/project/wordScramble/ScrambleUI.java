@@ -145,7 +145,12 @@ public abstract class ScrambleUI extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				nextScramblePreped = false;
+				Scramble nextScrTmp = nextScramble;
+				BufferedImage nextImgTmp = nextImage;
 				prepScramble(currentScramble, currentImage);
+				nextScramble();
+				prepScramble(nextScrTmp, nextImgTmp);
 			}
 		});
 		btnPanel.add(btnRestartScramble, gbc_btnRestartScramble);

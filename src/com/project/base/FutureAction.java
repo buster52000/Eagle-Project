@@ -6,7 +6,7 @@ import java.util.TimerTask;
 public abstract class FutureAction {
 	private Timer timer;
 	private String name;
-	
+
 	public FutureAction(String name) {
 		this.name = name;
 	}
@@ -37,11 +37,14 @@ public abstract class FutureAction {
 		}
 	}
 
-	// for the client to cancel any pending actions... (but does not try to cancel any tasks that may have already started)
+	// for the client to cancel any pending actions... (but does not try to
+	// cancel any tasks that may have already started)
 	public void cancel() {
 		synchronized (this) {
-			timer.cancel();
-			timer = null;
+			if (timer != null) {
+				timer.cancel();
+				timer = null;
+			}
 		}
 	}
 
