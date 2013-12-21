@@ -1,5 +1,3 @@
-/gameFiles/puzzles/abacus.txt
-/gameFiles/puzzles/mechanicalbank.txt
 /gameFiles/puzzles/peeps.txt
 /gameFiles/puzzles/arrowheads.txt
 /gameFiles/puzzles/bachmann.txt

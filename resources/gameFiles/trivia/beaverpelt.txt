@@ -1,5 +1,5 @@
 An early trading item between the Lenni Lenape and European settlers
-/gameFiles/pics/beaver.JPG
+/gameFiles/pics/beaver.jpg
 Lumber
 Deer
 Feathers

@@ -1,5 +1,5 @@
 Handheld devices that the local Native American tribe used to do tasks
-/gameFiles/pics/lenapetools2.JPG
+/gameFiles/pics/lenapetools2.jpg
 Puppets
 Computers
 Cameras

@@ -1,5 +1,5 @@
 Easton's Famous Clock and Jewelry Maker
-/gameFiles/pics/cbixler.JPG
+/gameFiles/pics/cbixler.jpg
 Mary Littman
 Frank Kay
 Paul Revere

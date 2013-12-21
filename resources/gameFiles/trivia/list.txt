@@ -5,5 +5,4 @@
 /gameFiles/trivia/justborn.txt
 /gameFiles/trivia/lenapetools.txt
 /gameFiles/trivia/pumpertruck.txt
-/gameFiles/trivia/test.txt
 /gameFiles/trivia/wwiiposters.txt

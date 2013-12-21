@@ -1,5 +1,5 @@
 What was FIRST used in Easton in 1797 to help put out fires?
-/gameFiles/pics/pumpertruck.JPG
+/gameFiles/pics/pumpertruck.jpg
 Chemicals
 Buckets
 Water

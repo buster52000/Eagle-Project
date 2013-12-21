@@ -1,5 +1,5 @@
 Name of a local Candy Company, that makes a variety of sweet treats.
-/gameFiles/pics/justborn.JPG
+/gameFiles/pics/justborn.jpg
 Nestle 
 M & M Mars
 Hershey
