@@ -183,7 +183,7 @@ public class BaseUtils {
 		
 	}
 	
-	public static void displayResult(final JLabel lblPic, String imageResourceName, final String soundResource) {
+	public static void displayResult(final JLabel lblPic, String imageResourceName, final String soundResource, final Runnable onCompletionAction) {
 		final Icon holder = lblPic == null ? null : lblPic.getIcon();
 		if (lblPic != null)
 			lblPic.setIcon(new ImageIcon(BaseUtils.class.getResource(imageResourceName)));
@@ -193,11 +193,15 @@ public class BaseUtils {
 				public void run() {
 					if (lblPic != null)
 						lblPic.setIcon(holder);
+					if (onCompletionAction != null)
+						onCompletionAction.run();
 				}
 			});
 		} else {
 			if (lblPic != null)
 				lblPic.setIcon(holder);
+			if (onCompletionAction != null)
+				onCompletionAction.run();
 		}
 	}
 
