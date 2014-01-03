@@ -1,4 +1,4 @@
 Abacus
 A Counting Tool
 /gameFiles/pics/abacus.jpg
-An abacus is a counting frame, used for doing math processes.   It has been used for hundred of years before the adoption of the writtne modern mathematical system.  Abaci were originally made with beans or stones moved on a big slab of wood, stone or metal. Today they are made use a wood frame with beads sliding on wires.  Abaci are still used today by merchants in Asia and Africa.  They are also used to teach young blind children mathematical skills.
+An abacus is a counting frame, used for doing math processes.   It has been used for hundred of years before the adoption of the written modern mathematical system.  Abaci were originally made with beans or stones moved on a big slab of wood, stone or metal. Today they are made use a wood frame with beads sliding on wires.  Abaci are still used today by merchants in Asia and Africa.  They are also used to teach young blind children mathematical skills.
