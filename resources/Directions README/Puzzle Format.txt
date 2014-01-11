@@ -1,0 +1,8 @@
+This file will show you the format of the puzzle files.
+The Picture of the puzzle should be located in the gameFiles/pics directory so therefor the Picture Location should
+be something like "gameFiles/pics/test.jpg" do not forget to include the file extension (ie ".jpg" or ".png")
+
+Format:
+Picture Location
+Description of Picture
+Name of Picture
